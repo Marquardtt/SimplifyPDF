@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { PDFDocument } from "pdf-lib";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { useRouter } from "next/navigation";
 import { CardComponent } from "./components";
@@ -86,17 +86,20 @@ export function PageContentComponent() {
             </div>
 
             <DndProvider backend={HTML5Backend}>
-                <div>
-                    <div className="cursor-pointer w-[100vh] grid grid-cols-9 gap-4">
-                        {files.map((file, index) => (
-                            <CardComponent key={index} index={index} file={file} moveFile={moveFile} />
-                        ))}
-                    </div>
+                <div className="cursor-pointer w-[100vh] grid grid-cols-9 gap-4">
+                    {files.map((file, index) => (
+                        <CardComponent key={index} index={index} file={file} moveFile={moveFile} />
+                    ))}
                 </div>
             </DndProvider>
 
-            <div className="bg-black w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-xl text-white" onClick={handleMerge}>
-                <span>Agrupar PDFs</span>
+            <div className="flex gap-10 text-sm">
+                <div className="bg-black w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white" onClick={handleMerge}>
+                    <span>Agrupar PDFs</span>
+                </div>
+                <div className="bg-black w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white" onClick={() => alert("Em desenvolvimento")}>
+                    <span className="text-center">Agrupar e numerar PDFs</span>
+                </div>
             </div>
         </div>
     );

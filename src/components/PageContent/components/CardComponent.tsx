@@ -38,7 +38,7 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile }
     return (
         <div
             ref={setRefs}
-            className={`text-sm flex items-end justify-center rounded-md border-2 truncate w-24 h-24 ${isDragging ? "opacity-50" : ""}`}
+            className={`text-sm flex items-end justify-center rounded-md border-2 truncate w-20 h-20 ${isDragging ? "opacity-50" : ""}`}
         >
             <span>{file.name.replace(".pdf", "")}</span>
         </div>
