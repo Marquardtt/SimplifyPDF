@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+input:where([type="file"]){
+    display: none;
+}
+
+label{
+    cursor: pointer;
+}
+
+html::-webkit-scrollbar {
+    display: none;
+}
