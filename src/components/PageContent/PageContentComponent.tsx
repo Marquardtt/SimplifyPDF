@@ -99,14 +99,21 @@ export function PageContentComponent() {
         }
     };
 
+    const removeFile = (index: number) => {
+        const updatedFiles = [...files];
+        updatedFiles.splice(index, 1);
+        setFiles(updatedFiles);
+    }
+
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-10 pt-24 pb-10">
+
             <div
-                className="border-2 w-[100vh] h-[30vh] rounded-md"
+                className="border-2 border-dashed w-[100vh] h-[30vh] rounded-md"
                 onDrop={dragDropFile}
                 onDragOver={dragOverFile}
             >
-                <label className="flex justify-center items-center w-[100vh] h-[30vh] dark:text-white" htmlFor="arquivos">
+                <label className="flex justify-center items-center w-[100vh] h-[30vh] dark:text-white opacity-50 text-xl font-bold" htmlFor="arquivos">
                     Arraste os arquivos até aqui ou clique para selecionar
                 </label>
                 <input
@@ -118,29 +125,31 @@ export function PageContentComponent() {
                     onChange={handleFile}
                 />
             </div>
-
-            <DndProvider backend={HTML5Backend}>
-                <div className="cursor-pointer w-[100vh] grid grid-cols-9 gap-4">
-                    {files.map((file, index) => (
-                        <CardComponent key={index} index={index} file={file} moveFile={moveFile} />
-                    ))}
-                </div>
-            </DndProvider>
-
             <div className="flex gap-10 text-sm">
                 <motion.div
                     whileTap={{ scale: 1.0 }}
                     whileHover={{ scale: 1.1 }}
-                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white" onClick={handleMerge}>
+                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleMerge}>
                     <span className="text-center">Agrupar PDFs</span>
                 </motion.div>
                 <motion.div
                     whileTap={{ scale: 1.0 }}
                     whileHover={{ scale: 1.1 }}
-                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white" onClick={handleEnumerate}>
+                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleEnumerate}>
                     <span className="text-center">Enumerar PDFs</span>
                 </motion.div>
             </div>
+
+            <DndProvider backend={HTML5Backend}>
+                <div className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center">
+                    {files.length == 0 ? <span className="dark:text-white opacity-50 text-xl font-bold">Nenhum arquivo selecionado :(</span> :
+                        <div className="grid grid-cols-9 gap-4">
+                            {files.map((file, index) => (
+                                <CardComponent key={index} index={index} file={file} moveFile={moveFile} removeFile={removeFile} />
+                            ))}
+                        </div>}
+                </div>
+            </DndProvider>
         </div>
     );
 }

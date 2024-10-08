@@ -1,5 +1,6 @@
 "use client";
 
+import { FooterComponent } from "@/components/Footer";
 import { HeaderComponent } from "@/components/Header";
 import { AppProps } from "next/app";
 import { ReactNode } from "react";
@@ -12,9 +13,12 @@ type Props = AppProps & {
 export default function Layout({ children }: Props) {
 
   return (
-    <body id="body" className={`w-screen h-screen bg-white flex flex-col dark:bg-slate-600 transition-all`}>
+    <body suppressHydrationWarning={true} id="body" className={`w-screen h-screen bg-white flex flex-col justify-between dark:bg-slate-600 transition-all`}>
       <HeaderComponent />
+      <div>
         {children}
+      </div>
+      <FooterComponent />
     </body>
   );
 }
