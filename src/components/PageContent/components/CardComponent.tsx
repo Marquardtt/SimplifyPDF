@@ -1,5 +1,6 @@
 import React from "react";
 import { useDrag, useDrop } from "react-dnd";
+import { motion } from "framer-motion";
 
 interface FileItemProps {
     file: File;
@@ -12,6 +13,7 @@ const ItemType = {
 };
 
 export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile }) => {
+
     const [{ isDragging }, dragRef] = useDrag({
         type: ItemType.FILE,
         item: { index },
@@ -36,11 +38,17 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile }
     };
 
     return (
-        <div
+        <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            dragTransition={{ bounceStiffness: 600, bounceDamping: 10 }}
             ref={setRefs}
-            className={`text-sm flex items-end justify-center rounded-md border-2 truncate w-20 h-20 ${isDragging ? "opacity-50" : ""}`}
+            className={`text-sm flex items-end justify-center rounded-md border-2 dark:border-white border-gray-300 w-20 h-20 ${isDragging ? "opacity-50" : ""}`}
         >
-            <span>{file.name.replace(".pdf", "")}</span>
-        </div>
+
+            <div className="flex justify-center items-center w-full dark:bg-white bg-gray-300  ">
+                <span className="text-center w-[85%] truncate">{file.name.replace(".pdf", "")}</span>
+            </div>
+        </motion.div>
     );
 };

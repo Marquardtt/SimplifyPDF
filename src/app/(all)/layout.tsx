@@ -12,9 +12,9 @@ type Props = AppProps & {
 export default function Layout({ children }: Props) {
 
   return (
-    <body id="body" className={`w-screen h-screen bg-white flex flex-col`}>
+    <body id="body" className={`w-screen h-screen bg-white flex flex-col dark:bg-slate-600 transition-all`}>
       <HeaderComponent />
-      {children}
+        {children}
     </body>
   );
 }

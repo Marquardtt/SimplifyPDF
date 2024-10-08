@@ -1,16 +1,14 @@
 "use client"
 
 import React, { useState } from "react";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { useRouter } from "next/navigation";
 import { CardComponent } from "./components";
-
+import { motion } from "framer-motion";
 
 export function PageContentComponent() {
     const [files, setFiles] = useState([] as File[]);
-    const router = useRouter();
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -34,6 +32,36 @@ export function PageContentComponent() {
         }
     };
 
+    const enumerateFiles = async (files: File[]) => {
+        const mergedPdf = await PDFDocument.create();
+        for (const file of files) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await PDFDocument.load(arrayBuffer);
+            const helveticaFont = await mergedPdf.embedFont(StandardFonts.Helvetica);
+            const pages = pdf.getPages();
+            const pageCount = pages.length;
+
+            for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+                const copiedPage = await mergedPdf.copyPages(pdf, [pageIndex]);
+                mergedPdf.addPage(copiedPage[0]);
+
+                const copiedPageWidth = copiedPage[0].getWidth();
+                const pageNumberText = mergedPdf.getPageCount();
+                copiedPage[0].setFont(helveticaFont);
+                copiedPage[0].drawText(pageNumberText.toString(), {
+                    x: copiedPageWidth - 30,
+                    y: 15,
+                    size: 12,
+                });
+            }
+        }
+
+        const mergedPdfBytes = await mergedPdf.save();
+        const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+    };
+
     const mergePDFs = async (pdfFiles: File[]) => {
         const mergedPdf = await PDFDocument.create();
 
@@ -49,7 +77,7 @@ export function PageContentComponent() {
         const mergedPdfBytes = await mergedPdf.save();
         const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
-        router.push(url);
+        window.open(url);
     };
 
     const moveFile = (dragIndex: number, hoverIndex: number) => {
@@ -65,6 +93,12 @@ export function PageContentComponent() {
         }
     };
 
+    const handleEnumerate = async () => {
+        if (files.length > 0) {
+            enumerateFiles(files);
+        }
+    };
+
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-10 pt-24 pb-10">
             <div
@@ -72,7 +106,7 @@ export function PageContentComponent() {
                 onDrop={dragDropFile}
                 onDragOver={dragOverFile}
             >
-                <label className="flex justify-center items-center w-[100vh] h-[30vh]" htmlFor="arquivos">
+                <label className="flex justify-center items-center w-[100vh] h-[30vh] dark:text-white" htmlFor="arquivos">
                     Arraste os arquivos até aqui ou clique para selecionar
                 </label>
                 <input
@@ -94,12 +128,18 @@ export function PageContentComponent() {
             </DndProvider>
 
             <div className="flex gap-10 text-sm">
-                <div className="bg-black w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white" onClick={handleMerge}>
-                    <span>Agrupar PDFs</span>
-                </div>
-                <div className="bg-black w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white" onClick={() => alert("Em desenvolvimento")}>
-                    <span className="text-center">Agrupar e numerar PDFs</span>
-                </div>
+                <motion.div
+                    whileTap={{ scale: 1.0 }}
+                    whileHover={{ scale: 1.1 }}
+                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white" onClick={handleMerge}>
+                    <span className="text-center">Agrupar PDFs</span>
+                </motion.div>
+                <motion.div
+                    whileTap={{ scale: 1.0 }}
+                    whileHover={{ scale: 1.1 }}
+                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white" onClick={handleEnumerate}>
+                    <span className="text-center">Enumerar PDFs</span>
+                </motion.div>
             </div>
         </div>
     );
