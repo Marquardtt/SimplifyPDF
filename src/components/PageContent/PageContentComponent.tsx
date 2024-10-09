@@ -4,15 +4,29 @@ import React, { useState } from "react";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { CardComponent } from "./components";
+import { CardComponent } from "./components/PDFCard";
 import { motion } from "framer-motion";
 
+interface FileP {
+    url: string;
+    name: string;
+    size: number;
+    type: string;
+    lastModified: number;
+    webkitRelativePath: string;
+    slice: (start?: number, end?: number, contentType?: string) => Blob;
+    stream: () => ReadableStream<Uint8Array>;
+    text: () => Promise<string>;
+    arrayBuffer: () => Promise<ArrayBuffer>;
+}
+
 export function PageContentComponent() {
-    const [files, setFiles] = useState([] as File[]);
+    const [files, setFiles] = useState([] as FileP[]);
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const selectedFiles = Array.from(e.target.files);
+            const selectedFiles = Array.from(e.target.files) as FileP[];
+            pdfLink(selectedFiles);
             setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
         }
     };
@@ -26,13 +40,21 @@ export function PageContentComponent() {
         e.preventDefault();
         e.stopPropagation();
 
-        const droppedFiles = Array.from(e.dataTransfer.files).filter(file => file.type === "application/pdf");
+        const droppedFiles = Array.from(e.dataTransfer.files).filter(file => file.type === "application/pdf") as FileP[];
         if (droppedFiles.length > 0) {
+            pdfLink(droppedFiles);
             setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
         }
     };
 
-    const enumerateFiles = async (files: File[]) => {
+    const pdfLink = (files: FileP[]) => {
+        for (const file of files) {
+            const url = URL.createObjectURL(new Blob([file], { type: "application/pdf" }));
+            file.url = url;
+        }
+    }
+
+    const enumerateFiles = async (files: FileP[]) => {
         const mergedPdf = await PDFDocument.create();
         for (const file of files) {
             const arrayBuffer = await file.arrayBuffer();
@@ -55,14 +77,13 @@ export function PageContentComponent() {
                 });
             }
         }
-
         const mergedPdfBytes = await mergedPdf.save();
         const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         window.open(url);
     };
 
-    const mergePDFs = async (pdfFiles: File[]) => {
+    const mergePDFs = async (pdfFiles: FileP[]) => {
         const mergedPdf = await PDFDocument.create();
 
         for (const file of pdfFiles) {
@@ -77,7 +98,9 @@ export function PageContentComponent() {
         const mergedPdfBytes = await mergedPdf.save();
         const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
+        console.log(files[0].url);
         window.open(url);
+
     };
 
     const moveFile = (dragIndex: number, hoverIndex: number) => {
@@ -107,7 +130,6 @@ export function PageContentComponent() {
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-10 pt-24 pb-10">
-
             <div
                 className="border-2 border-dashed w-[100vh] h-[30vh] rounded-md"
                 onDrop={dragDropFile}
@@ -145,7 +167,7 @@ export function PageContentComponent() {
                     {files.length == 0 ? <span className="dark:text-white opacity-50 text-xl font-bold">Nenhum arquivo selecionado :(</span> :
                         <div className="grid grid-cols-9 gap-4">
                             {files.map((file, index) => (
-                                <CardComponent key={index} index={index} file={file} moveFile={moveFile} removeFile={removeFile} />
+                                <CardComponent key={file.url.concat(index.toString())} index={index} file={file} moveFile={moveFile} removeFile={removeFile} />
                             ))}
                         </div>}
                 </div>
