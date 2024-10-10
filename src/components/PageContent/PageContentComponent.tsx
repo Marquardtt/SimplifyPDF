@@ -1,20 +1,34 @@
 "use client"
 
-import React, { useRef, useState } from "react";
-import { PDFDocument } from "pdf-lib";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
+import React, { useState } from "react";
+import { PDFDocument, StandardFonts } from "pdf-lib";
+import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { useRouter } from "next/navigation";
-import { CardComponent } from "./components";
+import { CardComponent } from "./components/PDFCard";
+import { delay, motion, Variants } from "framer-motion";
+import 'primeicons/primeicons.css';
 
+interface FileP {
+    url: string;
+    name: string;
+    size: number;
+    type: string;
+    lastModified: number;
+    webkitRelativePath: string;
+    slice: (start?: number, end?: number, contentType?: string) => Blob;
+    stream: () => ReadableStream<Uint8Array>;
+    text: () => Promise<string>;
+    arrayBuffer: () => Promise<ArrayBuffer>;
+}
 
 export function PageContentComponent() {
-    const [files, setFiles] = useState([] as File[]);
-    const router = useRouter();
+    const [files, setFiles] = useState([] as FileP[]);
+    const [removeFiles, setRemoveFiles] = useState(false);
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const selectedFiles = Array.from(e.target.files);
+            const selectedFiles = Array.from(e.target.files) as FileP[];
+            pdfLink(selectedFiles);
             setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
         }
     };
@@ -28,13 +42,50 @@ export function PageContentComponent() {
         e.preventDefault();
         e.stopPropagation();
 
-        const droppedFiles = Array.from(e.dataTransfer.files).filter(file => file.type === "application/pdf");
+        const droppedFiles = Array.from(e.dataTransfer.files).filter(file => file.type === "application/pdf") as FileP[];
         if (droppedFiles.length > 0) {
+            pdfLink(droppedFiles);
             setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
         }
     };
 
-    const mergePDFs = async (pdfFiles: File[]) => {
+    const pdfLink = (files: FileP[]) => {
+        for (const file of files) {
+            const url = URL.createObjectURL(new Blob([file], { type: "application/pdf" }));
+            file.url = url;
+        }
+    }
+
+    const enumerateFiles = async (files: FileP[]) => {
+        const mergedPdf = await PDFDocument.create();
+        for (const file of files) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await PDFDocument.load(arrayBuffer);
+            const helveticaFont = await mergedPdf.embedFont(StandardFonts.Helvetica);
+            const pages = pdf.getPages();
+            const pageCount = pages.length;
+
+            for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+                const copiedPage = await mergedPdf.copyPages(pdf, [pageIndex]);
+                mergedPdf.addPage(copiedPage[0]);
+
+                const copiedPageWidth = copiedPage[0].getWidth();
+                const pageNumberText = mergedPdf.getPageCount();
+                copiedPage[0].setFont(helveticaFont);
+                copiedPage[0].drawText(pageNumberText.toString(), {
+                    x: copiedPageWidth - 30,
+                    y: 15,
+                    size: 12,
+                });
+            }
+        }
+        const mergedPdfBytes = await mergedPdf.save();
+        const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+    };
+
+    const mergePDFs = async (pdfFiles: FileP[]) => {
         const mergedPdf = await PDFDocument.create();
 
         for (const file of pdfFiles) {
@@ -49,7 +100,9 @@ export function PageContentComponent() {
         const mergedPdfBytes = await mergedPdf.save();
         const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
-        router.push(url);
+        console.log(files[0].url);
+        window.open(url);
+
     };
 
     const moveFile = (dragIndex: number, hoverIndex: number) => {
@@ -65,14 +118,26 @@ export function PageContentComponent() {
         }
     };
 
+    const handleEnumerate = async () => {
+        if (files.length > 0) {
+            enumerateFiles(files);
+        }
+    };
+
+    const removeFile = (index: number) => {
+        const updatedFiles = [...files];
+        updatedFiles.splice(index, 1);
+        setFiles(updatedFiles);
+    }
+
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-10 pt-24 pb-10">
             <div
-                className="border-2 w-[100vh] h-[30vh] rounded-md"
+                className="border-2 border-dashed w-[100vh] h-[30vh] rounded-md hover:bg-gray-100 dark:bg-opacity-30 duration-300"
                 onDrop={dragDropFile}
                 onDragOver={dragOverFile}
             >
-                <label className="flex justify-center items-center w-[100vh] h-[30vh]" htmlFor="arquivos">
+                <label className="flex justify-center items-center w-[100vh] h-[30vh] dark:text-white dark:opacity-100 opacity-50 text-xl font-bold" htmlFor="arquivos">
                     Arraste os arquivos até aqui ou clique para selecionar
                 </label>
                 <input
@@ -84,20 +149,63 @@ export function PageContentComponent() {
                     onChange={handleFile}
                 />
             </div>
+            <div className="flex gap-10 text-sm">
+                <motion.div
+                    whileTap={{ scale: 1.0 }}
+                    whileHover={{ scale: 1.1 }}
+                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleMerge}>
+                    <span className="text-center">Agrupar PDFs</span>
+                </motion.div>
+                <motion.div
+                    whileTap={{ scale: 1.0 }}
+                    whileHover={{ scale: 1.1 }}
+                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleEnumerate}>
+                    <span className="text-center">Enumerar PDFs</span>
+                </motion.div>
+            </div>
 
             <DndProvider backend={HTML5Backend}>
-                <div>
-                    <div className="cursor-pointer w-[100vh] grid grid-cols-9 gap-4">
-                        {files.map((file, index) => (
-                            <CardComponent key={index} index={index} file={file} moveFile={moveFile} />
-                        ))}
+                <div className="flex flex-col items-end gap-2">
+                    <div className="h-[2rem]">
+                        {files.length > 0 && (
+                            <motion.div
+                                onClick={() => {setFiles([]), setRemoveFiles(false)}}
+                                animate={{ width: removeFiles ? "13rem" : "2rem" }}
+                                onMouseOver={() => setRemoveFiles(true)}
+                                onMouseLeave={() => setRemoveFiles(false)}
+                                transition={{ type: "spring", duration: 0.3, ease: "easeInOut" }}
+                                style={{ transformOrigin: "left" }}
+                                className={`h-[2rem] dark:bg-black bg-primary rounded-full flex items-center cursor-pointer ${!removeFiles ? "justify-center" : "px-2"}`}
+                            >
+                                <div className="overflow-hidden text-nowrap text-white text-sm flex justify-center items-center gap-2">
+                                    <i className="  pi pi-eraser" style={{ color: "white" }}></i>
+                                    {removeFiles ? <span>Remover todos arquivos</span> : ""}
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
+
+                    <div
+                        className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center ">
+                        {files.length === 0 ? (
+                            <span className="dark:text-white opacity-50 dark:opacity-100 text-xl font-bold">Nenhum arquivo selecionado :(</span>
+                        ) : (
+                            <motion.div className="grid grid-cols-9 gap-4">
+                                {files.map((file, index) => (
+                                    <CardComponent
+                                        key={file.url}
+                                        index={index}
+                                        file={file}
+                                        moveFile={moveFile}
+                                        removeFile={removeFile}
+                                    />
+                                ))}
+                            </motion.div>
+                        )}
                     </div>
                 </div>
-            </DndProvider>
 
-            <div className="bg-black w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-xl text-white" onClick={handleMerge}>
-                <span>Agrupar PDFs</span>
-            </div>
+            </DndProvider>
         </div>
     );
 }
