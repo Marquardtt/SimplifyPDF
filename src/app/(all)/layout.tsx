@@ -13,7 +13,7 @@ type Props = AppProps & {
 export default function Layout({ children }: Props) {
 
   return (
-    <body suppressHydrationWarning={true} id="body" className={`w-screen h-screen bg-white flex flex-col justify-between dark:bg-slate-600 transition-all`}>
+    <body suppressHydrationWarning={true} id="body" className={`font-montserrat w-screen h-screen bg-white flex flex-col justify-between dark:bg-slate-600 transition-all`}>
       <HeaderComponent />
       <div>
         {children}

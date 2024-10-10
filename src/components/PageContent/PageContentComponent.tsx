@@ -5,7 +5,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { CardComponent } from "./components/PDFCard";
-import { motion, Variants } from "framer-motion";
+import { delay, motion, Variants } from "framer-motion";
 import 'primeicons/primeicons.css';
 
 interface FileP {
@@ -133,11 +133,11 @@ export function PageContentComponent() {
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-10 pt-24 pb-10">
             <div
-                className="border-2 border-dashed w-[100vh] h-[30vh] rounded-md"
+                className="border-2 border-dashed w-[100vh] h-[30vh] rounded-md hover:bg-gray-100 dark:bg-opacity-30 duration-300"
                 onDrop={dragDropFile}
                 onDragOver={dragOverFile}
             >
-                <label className="flex justify-center items-center w-[100vh] h-[30vh] dark:text-white opacity-50 text-xl font-bold" htmlFor="arquivos">
+                <label className="flex justify-center items-center w-[100vh] h-[30vh] dark:text-white dark:opacity-100 opacity-50 text-xl font-bold" htmlFor="arquivos">
                     Arraste os arquivos até aqui ou clique para selecionar
                 </label>
                 <input
@@ -165,40 +165,42 @@ export function PageContentComponent() {
             </div>
 
             <DndProvider backend={HTML5Backend}>
-                <div>
-                    <div>
-                        <motion.div
-                            onClick={() => setFiles([])}
-                            initial={false}
-                            onMouseOver={() => setRemoveFiles(true)}
-                            onMouseLeave={() => setRemoveFiles(false)}
-                            whileHover={{ width: "12rem" }}
-                            className={`w-[2rem] h-[2rem] bg-primary rounded-full flex items-center  cursor-pointer ${!removeFiles ? "justify-center" : "px-2"}`}
-                        >
-                            <div className="text-nowrap text-white text-sm flex justify-center items-center gap-2">
-                                <i className="pi pi-eraser" style={{ color: "white" }}></i>
-                                {removeFiles ? <span>Remover todos arquivos</span> : ""}
-                            </div>
-
-                        </motion.div>
-                    </div>
-                    <div className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center">
-                        {files.length === 0 ? (
-                            <span className="dark:text-white opacity-50 text-xl font-bold">Nenhum arquivo selecionado :(</span>
-                        ) : (
-                            <div className="grid grid-cols-9 gap-4">
-                                <div>
-                                    {files.map((file, index) => (
-                                        <CardComponent
-                                            key={file.url}
-                                            index={index}
-                                            file={file}
-                                            moveFile={() => { }}
-                                            removeFile={() => { }}
-                                        />
-                                    ))}
+                <div className="flex flex-col items-end gap-2">
+                    <div className="h-[2rem]">
+                        {files.length > 0 && (
+                            <motion.div
+                                onClick={() => {setFiles([]), setRemoveFiles(false)}}
+                                animate={{ width: removeFiles ? "13rem" : "2rem" }}
+                                onMouseOver={() => setRemoveFiles(true)}
+                                onMouseLeave={() => setRemoveFiles(false)}
+                                transition={{ type: "spring", duration: 0.3, ease: "easeInOut" }}
+                                style={{ transformOrigin: "left" }}
+                                className={`h-[2rem] dark:bg-black bg-primary rounded-full flex items-center cursor-pointer ${!removeFiles ? "justify-center" : "px-2"}`}
+                            >
+                                <div className="overflow-hidden text-nowrap text-white text-sm flex justify-center items-center gap-2">
+                                    <i className="  pi pi-eraser" style={{ color: "white" }}></i>
+                                    {removeFiles ? <span>Remover todos arquivos</span> : ""}
                                 </div>
-                            </div>
+                            </motion.div>
+                        )}
+                    </div>
+
+                    <div
+                        className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center ">
+                        {files.length === 0 ? (
+                            <span className="dark:text-white opacity-50 dark:opacity-100 text-xl font-bold">Nenhum arquivo selecionado :(</span>
+                        ) : (
+                            <motion.div className="grid grid-cols-9 gap-4">
+                                {files.map((file, index) => (
+                                    <CardComponent
+                                        key={file.url}
+                                        index={index}
+                                        file={file}
+                                        moveFile={moveFile}
+                                        removeFile={removeFile}
+                                    />
+                                ))}
+                            </motion.div>
                         )}
                     </div>
                 </div>
