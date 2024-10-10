@@ -5,7 +5,8 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { CardComponent } from "./components/PDFCard";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
+import 'primeicons/primeicons.css';
 
 interface FileP {
     url: string;
@@ -22,6 +23,7 @@ interface FileP {
 
 export function PageContentComponent() {
     const [files, setFiles] = useState([] as FileP[]);
+    const [removeFiles, setRemoveFiles] = useState(false);
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -163,14 +165,44 @@ export function PageContentComponent() {
             </div>
 
             <DndProvider backend={HTML5Backend}>
-                <div className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center">
-                    {files.length == 0 ? <span className="dark:text-white opacity-50 text-xl font-bold">Nenhum arquivo selecionado :(</span> :
-                        <div className="grid grid-cols-9 gap-4">
-                            {files.map((file, index) => (
-                                <CardComponent key={file.url.concat(index.toString())} index={index} file={file} moveFile={moveFile} removeFile={removeFile} />
-                            ))}
-                        </div>}
+                <div>
+                    <div>
+                        <motion.div
+                            onClick={() => setFiles([])}
+                            initial={false}
+                            onMouseOver={() => setRemoveFiles(true)}
+                            onMouseLeave={() => setRemoveFiles(false)}
+                            whileHover={{ width: "12rem" }}
+                            className={`w-[2rem] h-[2rem] bg-primary rounded-full flex items-center  cursor-pointer ${!removeFiles ? "justify-center" : "px-2"}`}
+                        >
+                            <div className="text-nowrap text-white text-sm flex justify-center items-center gap-2">
+                                <i className="pi pi-eraser" style={{ color: "white" }}></i>
+                                {removeFiles ? <span>Remover todos arquivos</span> : ""}
+                            </div>
+
+                        </motion.div>
+                    </div>
+                    <div className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center">
+                        {files.length === 0 ? (
+                            <span className="dark:text-white opacity-50 text-xl font-bold">Nenhum arquivo selecionado :(</span>
+                        ) : (
+                            <div className="grid grid-cols-9 gap-4">
+                                <div>
+                                    {files.map((file, index) => (
+                                        <CardComponent
+                                            key={file.url}
+                                            index={index}
+                                            file={file}
+                                            moveFile={() => { }}
+                                            removeFile={() => { }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
             </DndProvider>
         </div>
     );
