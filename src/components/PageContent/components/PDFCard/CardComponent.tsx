@@ -1,7 +1,7 @@
-import React, { ReactElement, useState } from "react";
+import React, { useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { motion } from "framer-motion";
-// import { PDFView } from "@/components/PageContent/components/PDFView";
+import { PDFView } from "@/components/PageContent/components/PDFView";
 
 interface FileP {
     url: string;
@@ -28,9 +28,6 @@ const ItemType = {
 };
 
 export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, removeFile }) => {
-
-    const [hover, setHover] = useState<number | null>(null);
-
     const [{ isDragging }, dragRef] = useDrag({
         type: ItemType.FILE,
         item: { index },
@@ -41,10 +38,9 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
 
     const [, dropRef] = useDrop({
         accept: ItemType.FILE,
-        hover: (draggedItem: { index: number }) => {
+        drop: (draggedItem: { index: number }) => {
             if (draggedItem.index !== index) {
-                moveFile(draggedItem.index, index);
-                draggedItem.index = index;
+                moveFile(draggedItem.index, index); // Mova o arquivo apenas no evento de drop
             }
         },
     });
@@ -55,31 +51,35 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
     };
 
     return (
-        <>
-            <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                dragTransition={{ bounceStiffness: 600, bounceDamping: 10 }}
-                ref={setRefs}
-                onMouseEnter={() => setHover(index)}
-                onMouseLeave={() => setHover(null)}
-                className={`cursor-pointer relative text-sm flex items-end justify-center rounded-md border-2 dark:border-white border-gray-300 w-20 h-20 ${isDragging ? "opacity-50" : ""}`}
+        <motion.div
+            ref={setRefs}
+            whileHover={{ scale: 1.1, rotate: 1 }}
+            whileTap={{ scale: 0.95 }}
+            dragTransition={{ bounceStiffness: 500, bounceDamping: 20 }}
+            style={{
+                cursor: "grab",
+                opacity: isDragging ? 0.5 : 1,
+                transformOrigin: "center",
+                transition: "box-shadow ease",
+                boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+            }}
+            className={`relative text-sm flex items-end justify-center rounded-md border-2 dark:border-white border-gray-300 w-20 h-20 ${isDragging ? "bg-opacity-50" : "bg-white"}`}
+            layout
+        >
+            <div
+                className="dark:bg-white bg-gray-300 absolute rounded-bl-md w-5 h-5 top-0 right-0 flex justify-center items-center cursor-pointer"
+                onClick={() => removeFile(index)}
             >
-
-                {index == hover ?
-                    <div className="dark:bg-white bg-gray-300 absolute rounded-bl-md w-5 h-5 top-0 right-0 flex justify-center items-center"
-                        onClick={() => removeFile(index)}>
-                        <i className="pi pi-times"></i>
-                    </div>
-                    :
-                    ""}
-                <div className="flex flex-col justify-center items-center w-full dark:bg-white bg-gray-300  ">
-                    
-                    <div className="absolute bottom-0 text-center w-full truncate bg-gray-300">
-                        <span className="w-[85%]" title={file.name.replace(".pdf", "")}>{file.name.replace(".pdf", "")}</span>
-                    </div>
+                <i className="pi pi-times"></i>
+            </div>
+            <div className="flex flex-col justify-center items-center w-full dark:bg-white bg-gray-300">
+                <PDFView url={file.url}></PDFView>
+                <div className="absolute bottom-0 text-center w-full truncate bg-gray-300">
+                    <span className="w-[85%]" title={file.name.replace(".pdf", "")}>
+                        {file.name.replace(".pdf", "")}
+                    </span>
                 </div>
-            </motion.div>
-        </>
+            </div>
+        </motion.div>
     );
 };
