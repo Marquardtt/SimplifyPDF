@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { motion } from "framer-motion";
 import { CardComponent } from "./components/PDFCard";
-import { delay, motion, Variants } from "framer-motion";
 import 'primeicons/primeicons.css';
 
 interface FileP {

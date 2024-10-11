@@ -1,7 +1,7 @@
 import React, { ReactElement, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { motion } from "framer-motion";
-import { PDFView } from "@/components/PageContent/components/PDFView";
+// import { PDFView } from "@/components/PageContent/components/PDFView";
 
 interface FileP {
     url: string;
@@ -74,7 +74,7 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
                     :
                     ""}
                 <div className="flex flex-col justify-center items-center w-full dark:bg-white bg-gray-300  ">
-                    <PDFView  url={file.url}></PDFView>
+                    
                     <div className="absolute bottom-0 text-center w-full truncate bg-gray-300">
                         <span className="w-[85%]" title={file.name.replace(".pdf", "")}>{file.name.replace(".pdf", "")}</span>
                     </div>
