@@ -1,12 +1,13 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { CardComponent } from "./components/PDFCard";
 import 'primeicons/primeicons.css';
+import { PDFEditComponent } from "./components/PDFEdit";
 
 interface FileP {
     url: string;
@@ -23,7 +24,9 @@ interface FileP {
 
 export function PageContentComponent() {
     const [files, setFiles] = useState([] as FileP[]);
+    const [selectedFile, setSelectedFile] = useState<number | null>(null)
     const [removeFiles, setRemoveFiles] = useState(false);
+    const [pageNumber, setPageNumber] = useState<number>(0);
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -55,6 +58,19 @@ export function PageContentComponent() {
             file.url = url;
         }
     }
+
+    useEffect(() => {
+        const pageNumber = async (index: number) => {
+            const arrayBuffer = await files[index].arrayBuffer();
+            const pdfdoc = await PDFDocument.load(arrayBuffer);
+            const pages = pdfdoc.getPages();
+            setPageNumber(pages.length);
+        }
+        if (selectedFile !== null) {
+            pageNumber(selectedFile);
+        }
+    }, [selectedFile])
+
 
     const enumerateFiles = async (files: FileP[]) => {
         const mergedPdf = await PDFDocument.create();
@@ -169,7 +185,7 @@ export function PageContentComponent() {
                     <div className="h-[2rem]">
                         {files.length > 0 && (
                             <motion.div
-                                onClick={() => {setFiles([]), setRemoveFiles(false)}}
+                                onClick={() => { setFiles([]), setRemoveFiles(false) }}
                                 animate={{ width: removeFiles ? "13rem" : "2rem" }}
                                 onMouseOver={() => setRemoveFiles(true)}
                                 onMouseLeave={() => setRemoveFiles(false)}
@@ -192,20 +208,46 @@ export function PageContentComponent() {
                         ) : (
                             <motion.div className="grid grid-cols-9 gap-4">
                                 {files.map((file, index) => (
-                                    <CardComponent
-                                        key={file.url}
-                                        index={index}
-                                        file={file}
-                                        moveFile={moveFile}
-                                        removeFile={removeFile}
-                                    />
+                                    <div key={file.url} onClick={() => setSelectedFile(index)}>
+                                        <CardComponent
+                                            key={file.url}
+                                            index={index}
+                                            file={file}
+                                            moveFile={moveFile}
+                                            removeFile={removeFile}
+                                        />
+                                    </div>
                                 ))}
                             </motion.div>
                         )}
                     </div>
                 </div>
-
             </DndProvider>
+            <AnimatePresence>
+                {selectedFile !== null && pageNumber && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 flex items-center justify-center z-50">
+                        <div className="w-[40vw] h-[40vw] bg-white rounded-md flex flex-col items-center gap-4 p-4">
+                            <div className="flex justify-end w-full">
+                                <i className="pi pi-times cursor-pointer" onClick={() => setSelectedFile(null)}></i>
+                            </div>
+                            <PDFEditComponent file={files[selectedFile]} pageNumber={pageNumber}></PDFEditComponent>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
+
+
+{/* <div className="flex justify-center items-center">
+                                        <i className="pi pi-pencil" style={{ color: "black" }}></i>
+                                    </div>
+                                    <div className="flex justify-center items-center">
+                                        <i className="pi pi-eraser" style={{ color: "black" }}></i>
+                                    </div> */}
