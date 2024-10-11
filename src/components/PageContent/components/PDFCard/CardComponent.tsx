@@ -28,6 +28,7 @@ const ItemType = {
 };
 
 export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, removeFile }) => {
+    const [hover, setHover] = useState<number | null>(null);
     const [{ isDragging }, dragRef] = useDrag({
         type: ItemType.FILE,
         item: { index },
@@ -53,6 +54,8 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
     return (
         <motion.div
             ref={setRefs}
+            onMouseOver={() => setHover(index)}
+            onMouseLeave={() => setHover(null)}
             whileHover={{ scale: 1.1, rotate: 1 }}
             whileTap={{ scale: 0.95 }}
             dragTransition={{ bounceStiffness: 500, bounceDamping: 20 }}
@@ -66,12 +69,14 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
             className={`relative text-sm flex items-end justify-center rounded-md border-2 dark:border-white border-gray-300 w-20 h-20 ${isDragging ? "bg-opacity-50" : "bg-white"}`}
             layout
         >
-            <div
-                className="dark:bg-white bg-gray-300 absolute rounded-bl-md w-5 h-5 top-0 right-0 flex justify-center items-center cursor-pointer"
-                onClick={() => removeFile(index)}
-            >
-                <i className="pi pi-times"></i>
-            </div>
+            {hover === index && (
+                <div
+                    className="dark:bg-white bg-gray-300 absolute rounded-bl-md w-5 h-5 top-0 right-0 flex justify-center items-center cursor-pointer"
+                    onClick={() => removeFile(index)}
+                >
+                    <i className="pi pi-times"></i>
+                </div>
+            )}
             <div className="flex flex-col justify-center items-center w-full dark:bg-white bg-gray-300">
                 <div className="absolute bottom-0 text-center w-full truncate bg-gray-300">
                     <span className="w-[85%]" title={file.name.replace(".pdf", "")}>
