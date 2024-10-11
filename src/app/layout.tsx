@@ -1,7 +1,11 @@
 import "@/style/global.css"
-import React from "react"
+import React, { ReactNode } from "react"
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+interface RootLayoutProps {
+    children: ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
     return (
 
         <html>
@@ -9,7 +13,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <link rel="shortcut icon" href="logo.ico" />
                 <title>SimplifyPDF</title>
             </head>
-            {children}
+            <body>
+                {children}
+            </body>
         </html>
 
     )
