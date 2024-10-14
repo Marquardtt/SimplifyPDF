@@ -59,7 +59,7 @@ export function PageContentComponent() {
         if (selectedFile !== null) {
             pageNumber(selectedFile);
         }
-    }, [files, selectedFile])
+    }, [selectedFile])
 
 
     const enumerateFiles = async (files: FileP[]) => {
@@ -132,7 +132,6 @@ export function PageContentComponent() {
 
     const removeFile = (index: number) => {
         const updatedFiles = [...files];
-        
         updatedFiles.splice(index, 1);
         setFiles(updatedFiles);
     }
