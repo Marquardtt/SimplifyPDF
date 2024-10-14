@@ -1,4 +1,4 @@
-import { PageContentComponent } from "@/components/PageContent";
+import { PageContentComponent } from "../../../components/PageContent";
 
 
 export default function GroupPDF() {
