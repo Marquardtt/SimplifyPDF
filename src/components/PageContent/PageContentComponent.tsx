@@ -1,29 +1,22 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { CardComponent } from "./components/PDFCard";
+import { PDFEditComponent } from "./components/PDFEdit";
+import { FileP } from "@/models";
 import 'primeicons/primeicons.css';
-
-interface FileP {
-    url: string;
-    name: string;
-    size: number;
-    type: string;
-    lastModified: number;
-    webkitRelativePath: string;
-    slice: (start?: number, end?: number, contentType?: string) => Blob;
-    stream: () => ReadableStream<Uint8Array>;
-    text: () => Promise<string>;
-    arrayBuffer: () => Promise<ArrayBuffer>;
-}
+import { useOption } from "@/contexts/PageContentContext";
 
 export function PageContentComponent() {
     const [files, setFiles] = useState([] as FileP[]);
+    const [selectedFile, setSelectedFile] = useState<number | null>(null)
     const [removeFiles, setRemoveFiles] = useState(false);
+    const [pageNumber, setPageNumber] = useState<number>(0);
+    const { option } = useOption();
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -56,6 +49,19 @@ export function PageContentComponent() {
         }
     }
 
+    useEffect(() => {
+        const pageNumber = async (index: number) => {
+            const arrayBuffer = await files[index].arrayBuffer();
+            const pdfdoc = await PDFDocument.load(arrayBuffer);
+            const pages = pdfdoc.getPages();
+            setPageNumber(pages.length);
+        }
+        if (selectedFile !== null) {
+            pageNumber(selectedFile);
+        }
+    }, [files, selectedFile])
+
+
     const enumerateFiles = async (files: FileP[]) => {
         const mergedPdf = await PDFDocument.create();
         for (const file of files) {
@@ -75,7 +81,7 @@ export function PageContentComponent() {
                 copiedPage[0].drawText(pageNumberText.toString(), {
                     x: copiedPageWidth - 30,
                     y: 15,
-                    size: 12,
+                    size: 8,
                 });
             }
         }
@@ -126,6 +132,7 @@ export function PageContentComponent() {
 
     const removeFile = (index: number) => {
         const updatedFiles = [...files];
+        
         updatedFiles.splice(index, 1);
         setFiles(updatedFiles);
     }
@@ -150,18 +157,27 @@ export function PageContentComponent() {
                 />
             </div>
             <div className="flex gap-10 text-sm">
-                <motion.div
-                    whileTap={{ scale: 1.0 }}
-                    whileHover={{ scale: 1.1 }}
-                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleMerge}>
-                    <span className="text-center">Agrupar PDFs</span>
-                </motion.div>
-                <motion.div
-                    whileTap={{ scale: 1.0 }}
-                    whileHover={{ scale: 1.1 }}
-                    className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleEnumerate}>
-                    <span className="text-center">Enumerar PDFs</span>
-                </motion.div>
+                {
+                    option === 'merge' ?
+                        (
+                            <motion.div
+                                whileTap={{ scale: 1.0 }}
+                                whileHover={{ scale: 1.1 }}
+                                className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleMerge}>
+                                <span className="text-center">Agrupar PDFs</span>
+                            </motion.div>
+                        )
+                        :
+                        (
+                            <motion.div
+                                whileTap={{ scale: 1.0 }}
+                                whileHover={{ scale: 1.1 }}
+                                className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleEnumerate}>
+                                <span className="text-center">Enumerar PDFs</span>
+                            </motion.div>
+                        )
+                }
+
             </div>
 
             <DndProvider backend={HTML5Backend}>
@@ -169,7 +185,7 @@ export function PageContentComponent() {
                     <div className="h-[2rem]">
                         {files.length > 0 && (
                             <motion.div
-                                onClick={() => {setFiles([]), setRemoveFiles(false)}}
+                                onClick={() => { setFiles([]), setRemoveFiles(false) }}
                                 animate={{ width: removeFiles ? "13rem" : "2rem" }}
                                 onMouseOver={() => setRemoveFiles(true)}
                                 onMouseLeave={() => setRemoveFiles(false)}
@@ -185,27 +201,55 @@ export function PageContentComponent() {
                         )}
                     </div>
 
-                    <div
-                        className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center ">
+                    <div className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center">
                         {files.length === 0 ? (
-                            <span className="dark:text-white opacity-50 dark:opacity-100 text-xl font-bold">Nenhum arquivo selecionado :(</span>
+                            <motion.span
+                                className="dark:text-white opacity-50 dark:opacity-100 text-xl font-bold"
+                                transition={{ duration: 0.5 }}
+                            >
+                                Nenhum arquivo selecionado :(
+                            </motion.span>
                         ) : (
-                            <motion.div className="grid grid-cols-9 gap-4">
+                            <motion.div
+                                className="grid grid-cols-9 gap-4"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5 }}
+                            >
                                 {files.map((file, index) => (
-                                    <CardComponent
-                                        key={file.url}
-                                        index={index}
-                                        file={file}
-                                        moveFile={moveFile}
-                                        removeFile={removeFile}
-                                    />
+                                    <div key={file.url} onClick={() => setSelectedFile(index)}>
+                                        <CardComponent
+                                            key={file.url}
+                                            index={index}
+                                            file={file}
+                                            moveFile={moveFile}
+                                            removeFile={removeFile}
+                                        />
+                                    </div>
                                 ))}
                             </motion.div>
                         )}
                     </div>
-                </div>
 
+                </div>
             </DndProvider>
+            <AnimatePresence>
+                {selectedFile !== null && pageNumber && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 flex items-center justify-center z-50">
+                        <div className="md:w-[60vw] md:h-[50vw] lg:h-[94%] lg:w-1/1 bg-white rounded-md flex flex-col items-center gap-4 p-4">
+                            <div className="flex justify-end w-full">
+                                <i className="pi pi-times cursor-pointer" onClick={() => setSelectedFile(null)}></i>
+                            </div>
+                            <PDFEditComponent file={files[selectedFile]} pageNumber={pageNumber}></PDFEditComponent>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

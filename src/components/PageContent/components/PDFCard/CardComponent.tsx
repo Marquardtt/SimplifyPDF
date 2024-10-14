@@ -1,20 +1,8 @@
 import React, { useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { motion } from "framer-motion";
-// import { PDFView } from "@/components/PageContent/components/PDFView";
-
-interface FileP {
-    url: string;
-    name: string;
-    size: number;
-    type: string;
-    lastModified: number;
-    webkitRelativePath: string;
-    slice: (start?: number, end?: number, contentType?: string) => Blob;
-    stream: () => ReadableStream<Uint8Array>;
-    text: () => Promise<string>;
-    arrayBuffer: () => Promise<ArrayBuffer>;
-}
+import { PDFView } from "@/components/PageContent/components/PDFView";
+import { FileP } from "@/models";
 
 interface FileItemProps {
     file: FileP;
@@ -37,11 +25,16 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
         }),
     });
 
+    const handleRemove = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        removeFile(index);
+    }
+
     const [, dropRef] = useDrop({
         accept: ItemType.FILE,
         drop: (draggedItem: { index: number }) => {
             if (draggedItem.index !== index) {
-                moveFile(draggedItem.index, index); // Mova o arquivo apenas no evento de drop
+                moveFile(draggedItem.index, index);
             }
         },
     });
@@ -72,12 +65,13 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
             {hover === index && (
                 <div
                     className="dark:bg-white bg-gray-300 absolute rounded-bl-md w-5 h-5 top-0 right-0 flex justify-center items-center cursor-pointer"
-                    onClick={() => removeFile(index)}
+                    onClick={(e) => handleRemove(e)}
                 >
                     <i className="pi pi-times"></i>
                 </div>
             )}
             <div className="flex flex-col justify-center items-center w-full dark:bg-white bg-gray-300">
+                <PDFView url={file.url} />
                 <div className="absolute bottom-0 text-center w-full truncate bg-gray-300">
                     <span className="w-[85%]" title={file.name.replace(".pdf", "")}>
                         {file.name.replace(".pdf", "")}
