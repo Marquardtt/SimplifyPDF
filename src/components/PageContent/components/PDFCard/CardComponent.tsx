@@ -25,6 +25,11 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
         }),
     });
 
+    const handleRemove = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        removeFile(index);
+    }
+
     const [, dropRef] = useDrop({
         accept: ItemType.FILE,
         drop: (draggedItem: { index: number }) => {
@@ -60,7 +65,7 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
             {hover === index && (
                 <div
                     className="dark:bg-white bg-gray-300 absolute rounded-bl-md w-5 h-5 top-0 right-0 flex justify-center items-center cursor-pointer"
-                    onClick={() => removeFile(index)}
+                    onClick={(e) => handleRemove(e)}
                 >
                     <i className="pi pi-times"></i>
                 </div>
