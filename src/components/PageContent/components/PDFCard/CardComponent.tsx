@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { motion } from "framer-motion";
-import { PDFView } from "../../../PageContent/components/PDFView";
+import { PDFView } from "@/components/PageContent/components/PDFView";
 import { FileP } from "@/models";
 
 interface FileItemProps {

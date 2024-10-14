@@ -1,7 +1,7 @@
 "use client"
 
-import { FooterComponent } from "../../components/Footer";
-import { HeaderComponent } from "../../components/Header";
+import { FooterComponent } from "@/components/Footer";
+import { HeaderComponent } from "@/components/Header";
 import { ReactNode } from "react";
 
 type LayoutProps = {
