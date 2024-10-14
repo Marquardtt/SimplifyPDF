@@ -1,11 +1,7 @@
-
-
-import { PageContentComponent } from "@/components/PageContent";
-
 export default function Homepage() {
     return (
-        <div>
-            <PageContentComponent />
+        <div className="flex items-center justify-center pt-40 dark:text-white">
+            Homepage em desenvolvimento
         </div>
     )
 }

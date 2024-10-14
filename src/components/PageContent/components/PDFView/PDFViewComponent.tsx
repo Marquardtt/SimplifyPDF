@@ -25,7 +25,7 @@ export const PDFView = ({ url }: PDFViewProps) => {
         if (!canvasRef.current) return;
 
         const page = await pdf.getPage(pageNumber);
-        const viewport = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: 1.5 });
         const canvas = canvasRef.current;
         const context = canvas.getContext("2d");
 
