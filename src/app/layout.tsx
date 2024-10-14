@@ -1,3 +1,4 @@
+import { PageContent } from "@/contexts/PageContentContext";
 import "@/style/global.css"
 import React, { ReactNode } from "react"
 
@@ -14,7 +15,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <title>SimplifyPDF</title>
             </head>
             <body>
-                {children}
+                <PageContent>
+                    {children}
+                </PageContent>
             </body>
         </html>
 
