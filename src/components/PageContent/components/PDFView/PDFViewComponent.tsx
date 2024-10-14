@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import * as pdfjsLib from "pdfjs-dist";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.entry";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 interface PDFViewProps {
     url: string;
@@ -54,6 +55,9 @@ export const PDFView = ({ url }: PDFViewProps) => {
     }, [pdf]);
 
     return (
-        <canvas className="rounded-md border-4 border-gray-300 w-20 h-20 overflow-hidden" ref={canvasRef} />
+        <canvas
+            className="rounded-md border-4 border-gray-300 w-20 h-20 overflow-hidden"
+            ref={canvasRef}
+        />
     );
 };
