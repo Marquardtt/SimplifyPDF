@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import * as pdfjsLib from "pdfjs-dist";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.entry";
 import { FileP } from "@/models";
 import { motion } from "framer-motion";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 interface PDFEditProps {
     file: FileP;
@@ -16,7 +17,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
     const [pageNumber, setPageNumber] = useState(initialPageNumber);
     const [zoomLevel, setZoomLevel] = useState(1);
     const renderTaskRef = useRef<any>(null);
-    const [colorSelected, setColorSelected] = useState("#fffff1");
+    const [colorSelected, setColorSelected] = useState("#FFFFFF");
     const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
     const [isDrawing, setIsDrawing] = useState(false);
