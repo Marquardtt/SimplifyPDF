@@ -59,7 +59,7 @@ export function PageContentComponent() {
         if (selectedFile !== null) {
             pageNumber(selectedFile);
         }
-    }, [selectedFile])
+    }, [files, selectedFile])
 
 
     const enumerateFiles = async (files: FileP[]) => {
