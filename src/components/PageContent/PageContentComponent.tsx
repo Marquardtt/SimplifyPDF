@@ -8,15 +8,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CardComponent } from "./components/PDFCard";
 import { PDFEditComponent } from "./components/PDFEdit";
 import { FileP } from "@/models";
+import { useRouter } from "next/router";
 import 'primeicons/primeicons.css';
-import { useOption } from "@/contexts/PageContentContext";
 
-export function PageContentComponent() {
+interface PageContentProps {
+    func: JSX.Element
+}
+
+export function PageContentComponent({ func }: PageContentProps) {
     const [files, setFiles] = useState([] as FileP[]);
     const [selectedFile, setSelectedFile] = useState<number | null>(null)
     const [removeFiles, setRemoveFiles] = useState(false);
     const [pageNumber, setPageNumber] = useState<number>(0);
-    const { option } = useOption();
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -137,13 +140,13 @@ export function PageContentComponent() {
     }
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-10 pt-24 pb-10">
+        <div className="w-full h-full flex flex-col items-center justify-center gap-10">
             <div
-                className="border-2 border-dashed w-[100vh] h-[30vh] rounded-md hover:bg-gray-100 dark:bg-opacity-30 duration-300"
+                className=" flex justify-center items-center border-2 border-dashed sm:w-1/2 sm:h-[30vh] sm:mx-6 h-[15vh] mx-6 rounded-md hover:bg-gray-100 dark:bg-opacity-30 duration-300"
                 onDrop={dragDropFile}
                 onDragOver={dragOverFile}
             >
-                <label className="flex justify-center items-center w-[100vh] h-[30vh] dark:text-white dark:opacity-100 opacity-50 text-xl font-bold" htmlFor="arquivos">
+                <label className="text-center flex justify-center items-center w-11/12 h-full dark:text-white dark:opacity-100 opacity-50 text-xl font-bold" htmlFor="arquivos">
                     Arraste os arquivos até aqui ou clique para selecionar
                 </label>
                 <input
@@ -156,31 +159,11 @@ export function PageContentComponent() {
                 />
             </div>
             <div className="flex gap-10 text-sm">
-                {
-                    option === 'merge' ?
-                        (
-                            <motion.div
-                                whileTap={{ scale: 1.0 }}
-                                whileHover={{ scale: 1.1 }}
-                                className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleMerge}>
-                                <span className="text-center">Agrupar PDFs</span>
-                            </motion.div>
-                        )
-                        :
-                        (
-                            <motion.div
-                                whileTap={{ scale: 1.0 }}
-                                whileHover={{ scale: 1.1 }}
-                                className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleEnumerate}>
-                                <span className="text-center">Enumerar PDFs</span>
-                            </motion.div>
-                        )
-                }
-
+                {func}
             </div>
 
             <DndProvider backend={HTML5Backend}>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col justify-center items-end gap-2 w-1/1 min-h-[20vh] mx-0 sm:mx-6">
                     <div className="h-[2rem]">
                         {files.length > 0 && (
                             <motion.div
@@ -200,7 +183,7 @@ export function PageContentComponent() {
                         )}
                     </div>
 
-                    <div className="w-[100vh] min-h-[20vh] border-2 px-4 py-4 rounded-md flex items-center justify-center">
+                    <div className="w-full h-full border-2 px-4 py-4 rounded-md flex items-center justify-center">
                         {files.length === 0 ? (
                             <motion.span
                                 className="dark:text-white opacity-50 dark:opacity-100 text-xl font-bold"
@@ -210,7 +193,7 @@ export function PageContentComponent() {
                             </motion.span>
                         ) : (
                             <motion.div
-                                className="grid grid-cols-9 gap-4"
+                                className="grid lg:grid-cols-9 grid-cols-4 gap-4"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.5 }}
@@ -240,9 +223,9 @@ export function PageContentComponent() {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 flex items-center justify-center z-50">
-                        <div className="md:w-[60vw] md:h-[50vw] lg:h-[94%] lg:w-1/1 bg-white rounded-md flex flex-col items-center gap-4 p-4">
+                        <div className="md:w-[60vw] md:h-[50vw] lg:h-[94%] lg:w-1/1 bg-primary dark:bg-slate-600 rounded-md flex flex-col items-center gap-4 p-4">
                             <div className="flex justify-end w-full">
-                                <i className="pi pi-times cursor-pointer" onClick={() => setSelectedFile(null)}></i>
+                                <i className="pi pi-times cursor-pointer" style={{ color: "white" }} onClick={() => setSelectedFile(null)}></i>
                             </div>
                             <PDFEditComponent file={files[selectedFile]} pageNumber={pageNumber}></PDFEditComponent>
                         </div>

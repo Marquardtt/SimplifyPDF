@@ -12,6 +12,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <html>
             <head>
                 <link rel="shortcut icon" href="logo.ico" />
+                <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"></link>
                 <title>SimplifyPDF</title>
             </head>
             <body>
