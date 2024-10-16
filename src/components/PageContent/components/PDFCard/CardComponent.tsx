@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { motion } from "framer-motion";
 import { PDFView } from "@/components/PageContent/components/PDFView";
 import { FileP } from "@/models";
+import { FilesContext } from "@/contexts/FilesContext";
 
 interface FileItemProps {
     file: FileP;
@@ -17,6 +18,8 @@ const ItemType = {
 
 export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, removeFile }) => {
     const [hover, setHover] = useState<number | null>(null);
+    const { files } = useContext(FilesContext);
+
     const [{ isDragging }, dragRef] = useDrag({
         type: ItemType.FILE,
         item: { index },
@@ -46,6 +49,7 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
 
     return (
         <motion.div
+            key={file.url}
             ref={setRefs}
             onMouseOver={() => setHover(index)}
             onMouseLeave={() => setHover(null)}
@@ -71,10 +75,10 @@ export const CardComponent: React.FC<FileItemProps> = ({ file, index, moveFile, 
                 </div>
             )}
             <div className="flex flex-col justify-center items-center w-full dark:bg-white bg-gray-300">
-                <PDFView url={file.url} />
+                <PDFView url={files!.find((f)=> f.url == file.url)!.url} />
                 <div className="absolute bottom-0 text-center w-full truncate bg-gray-300">
-                    <span className="w-[85%]" title={file.name.replace(".pdf", "")}>
-                        {file.name.replace(".pdf", "")}
+                    <span className="w-[85%]" title={files!.find((f) => f.name == file.name )?.name.replace('.pdf', '')}>
+                    {files!.find((f) => f.name == file.name )?.name.replace('.pdf', '')}
                     </span>
                 </div>
             </div>

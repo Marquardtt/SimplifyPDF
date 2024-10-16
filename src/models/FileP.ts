@@ -10,6 +10,7 @@ export class FileP{
         public slice: (start?: number, end?: number, contentType?: string) => Blob,
         public stream: () => ReadableStream<Uint8Array>,
         public text: () => Promise<string>,
-        public arrayBuffer: () => Promise<ArrayBuffer> 
+        public arrayBuffer: () => Promise<ArrayBuffer>,
     ){}
 }
+

@@ -11,13 +11,12 @@ type LayoutProps = {
 export default function Layout({ children }: LayoutProps) {
   return (
     <body
-      suppressHydrationWarning={true}
       id="body"
-      className={`font-montserrat w-screen h-screen bg-white flex flex-col justify-between dark:bg-slate-600 transition-all`}
+      className={` font-montserrat w-screen h-screen bg-white flex flex-col justify-between  dark:bg-slate-600 transition-all`}
     >
-      <HeaderComponent />
-      <div>{children}</div>
-      <FooterComponent />
+      <header><HeaderComponent /></header>
+      <div className="py-24">{children}</div>
     </body>
+    
   );
 }
