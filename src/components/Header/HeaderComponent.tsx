@@ -36,67 +36,57 @@ export function HeaderComponent() {
 
     return (
         <>
-            <div style={{ color: "white" }} className={`flex items-center justify-between text-xl px-6 w-full dark:bg-black bg-primary h-[6%] fixed left-0 top-0 z-20`}>
-                <motion.span
-                    onClick={() => router.push('/')}
-                    className="text-center cursor-pointer">SimplifyPDF</motion.span>
+            <div style={{ color: "white" }} className={`flex items-center justify-between text-xl px-5 w-full dark:bg-black bg-primary h-[6%] fixed left-0 top-0 z-20`}>
+                <span style={{ fontSize: 25 }} onClick={() => setHover(!hover)} className="cursor-pointer"><i className="pi pi-bars"></i></span>
+                <div className="w-fit">
+                    <motion.span
+                        onClick={() => router.push('/')}
+                        className="flex justify-center text-center cursor-pointer">SimplifyPDF</motion.span>
+                </div>
                 <span style={{ fontSize: 25 }} onClick={() => handleTheme()} className=" cursor-pointer"><i className={` ${theme == 'dark' ? "pi pi-moon" : "pi pi-sun"}`}></i></span>
             </div>
-            <div
-                className="text-white font-montserrat"
-                onMouseOver={() => setHover(true)}
-                onMouseLeave={() => setHover(false)}
+            <motion.div
+                transition={{ type: "spring", stiffness: 300, damping: 30, duration: 0.5 }}
+                animate={{ width: hover ? "220px" : "" }}
+                className="overflow-hidden text-white font-montserrat fixed h-full bg-primary dark:bg-black z-10"
             >
-                <div
-                    className=" w-[3%] dark:bg-black bg-primary h-full fixed left-0 top-0 grid grid-rows-2 z-10 "
-                >
-                    <div
-                        className="w-full flex flex-col items-center gap-10 py-5">
-                        <div className="flex gap-4 justify-around absolute top-20 left-5">
-                            <div>
-                                <i className="pi pi-wrench" style={{ color: "white", fontSize: 20 }}></i>
-                            </div>
-                            <motion.div
-                                animate={{ opacity: hover ? "100%" : "0%", display: hover ? "" : "none" }}
-                                className="flex flex-col justify-center gap-4 ">
-                                <div onClick={() => setShow(!show)} className="flex  gap-5 items-center  cursor-pointer">
-                                    <span className="w-fit h-fit">Ferramentas</span>
-                                    <motion.i
-                                        className="w-fit h-fit pi pi-angle-up"
-                                        animate={{ rotate: show ? 0 : -180 }}>
-                                    </motion.i>
-                                </div>
-                                <motion.div className={`flex flex-col gap-3 w-full ${hover && show ? "block" : "none"}`} animate={{ opacity: show ? "100%" : "0%" }}>
-                                    <div onClick={() => (router.push('/merge'))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></div>
-                                    <div onClick={() => (router.push('/enumerate'))} className="gap-2  flex items-center text-sm cursor-pointer"><i className="pi pi-sort-numeric-up" style={{ fontSize: 15 }}></i><span className="">Numerar PDFs</span></div>
-                                    <div onClick={() => (router.push('/edit'))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-cog" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></div>
-                                </motion.div>
-                            </motion.div>
-                        </div>
+                <div className="px-5 flex gap-4 justify-around absolute top-20">
+                    <div>
+                        <i className="pi pi-wrench" style={{ color: "white", fontSize: 20 }}></i>
                     </div>
-
-                    <div className="flex gap-4 justify-around absolute bottom-5 left-5"
-                        onClick={() => { }} >
-                        <div>
-                            <i className="pi pi-cog" style={{ color: "white", fontSize: 20 }}></i>
+                    <motion.div
+                        animate={{ opacity: hover ? "100%" : "0%", display: hover ? "" : "none" }}
+                        className="flex flex-col justify-center gap-4 ">
+                        <div onClick={() => setShow(!show)} className="flex  gap-5 items-center  cursor-pointer">
+                            <span className="w-fit h-fit">Ferramentas</span>
+                            <motion.i
+                                className="w-fit h-fit pi pi-angle-up"
+                                animate={{ rotate: show ? 0 : -180 }}>
+                            </motion.i>
                         </div>
-                        <motion.div
-                            animate={{ opacity: hover ? "100%" : "0%" }}
-                            className="flex flex-col justify-center gap-4 ">
-                            <div className="flex items-center gap-6 cursor-pointer">
-                                <span>Configurações</span>
-                            </div>
+                        <motion.div className={`flex flex-col gap-3 w-full ${hover && show ? "block" : "none"}`} animate={{ opacity: show ? "100%" : "0%" }}>
+                            <motion.div 
+                            animate={{}}
+                            onClick={() => (router.push('/merge'))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></motion.div>
+                            <motion.div onClick={() => (router.push('/enumerate'))} className="gap-2  flex items-center text-sm cursor-pointer"><i className="pi pi-sort-numeric-up" style={{ fontSize: 15 }}></i><span className="">Numerar PDFs</span></motion.div>
+                            <motion.div onClick={() => (router.push('/edit'))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-cog" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
                         </motion.div>
-                    </div>
+                    </motion.div>
                 </div>
-                <motion.div
-
-                    transition={{ type: "spring", stiffness: 300, damping: 30, duration: 0.5 }}
-                    animate={{ width: hover ? "11%" : "0%" }}
-                    className="absolute h-full bg-primary dark:bg-black "
-                >
-                </motion.div>
-            </div>
+                <div className="px-5 flex gap-4 justify-around absolute bottom-5"
+                    onClick={() => { }} >
+                    <div>
+                        <i className="pi pi-cog" style={{ color: "white", fontSize: 20 }}></i>
+                    </div>
+                    <motion.div
+                        animate={{ opacity: hover ? "100%" : "0%" }}
+                        className="flex flex-col justify-center gap-4 ">
+                        <div className="flex items-center gap-6 cursor-pointer">
+                            <span>Configurações</span>
+                        </div>
+                    </motion.div>
+                </div>
+            </motion.div>
         </>
     )
 }

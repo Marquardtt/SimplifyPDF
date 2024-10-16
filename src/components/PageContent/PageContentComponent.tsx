@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -8,24 +8,27 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CardComponent } from "./components/PDFCard";
 import { PDFEditComponent } from "./components/PDFEdit";
 import { FileP } from "@/models";
-import { useRouter } from "next/router";
 import 'primeicons/primeicons.css';
+import { FilesContext } from "@/contexts/FilesContext";
 
 interface PageContentProps {
-    func: JSX.Element
+    func: JSX.Element;
 }
 
 export function PageContentComponent({ func }: PageContentProps) {
-    const [files, setFiles] = useState([] as FileP[]);
-    const [selectedFile, setSelectedFile] = useState<number | null>(null)
+    const { files, setFiles } = useContext(FilesContext);
+    const [selectedFile, setSelectedFile] = useState<number | null>(null);
     const [removeFiles, setRemoveFiles] = useState(false);
     const [pageNumber, setPageNumber] = useState<number>(0);
 
+
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const selectedFiles = Array.from(e.target.files) as FileP[];
-            pdfLink(selectedFiles);
-            setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+        if (setFiles && files) {
+            if (e.target.files) {
+                const selectedFiles = Array.from(e.target.files) as FileP[];
+                pdfLink(selectedFiles);
+                setFiles([...files, ...selectedFiles]);
+            }
         }
     };
 
@@ -39,9 +42,9 @@ export function PageContentComponent({ func }: PageContentProps) {
         e.stopPropagation();
 
         const droppedFiles = Array.from(e.dataTransfer.files).filter(file => file.type === "application/pdf") as FileP[];
-        if (droppedFiles.length > 0) {
+        if (setFiles && files && droppedFiles.length > 0) {
             pdfLink(droppedFiles);
-            setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
+            setFiles([...files, ...droppedFiles]);
         }
     };
 
@@ -50,94 +53,44 @@ export function PageContentComponent({ func }: PageContentProps) {
             const url = URL.createObjectURL(new Blob([file], { type: "application/pdf" }));
             file.url = url;
         }
-    }
+    };
 
     useEffect(() => {
-        const pageNumber = async (index: number) => {
-            const arrayBuffer = await files[index].arrayBuffer();
-            const pdfdoc = await PDFDocument.load(arrayBuffer);
-            const pages = pdfdoc.getPages();
-            setPageNumber(pages.length);
-        }
-        if (selectedFile !== null) {
-            pageNumber(selectedFile);
-        }
-    }, [selectedFile])
-
-
-    const enumerateFiles = async (files: FileP[]) => {
-        const mergedPdf = await PDFDocument.create();
-        for (const file of files) {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await PDFDocument.load(arrayBuffer);
-            const helveticaFont = await mergedPdf.embedFont(StandardFonts.Helvetica);
-            const pages = pdf.getPages();
-            const pageCount = pages.length;
-
-            for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-                const copiedPage = await mergedPdf.copyPages(pdf, [pageIndex]);
-                mergedPdf.addPage(copiedPage[0]);
-
-                const copiedPageWidth = copiedPage[0].getWidth();
-                const pageNumberText = mergedPdf.getPageCount();
-                copiedPage[0].setFont(helveticaFont);
-                copiedPage[0].drawText(pageNumberText.toString(), {
-                    x: copiedPageWidth - 30,
-                    y: 15,
-                    size: 8,
-                });
+        const getPageCount = async (index: number) => {
+            const arrayBuffer = await files?.[index]?.arrayBuffer();
+            if (arrayBuffer) {
+                const pdfdoc = await PDFDocument.load(arrayBuffer);
+                const pages = pdfdoc.getPages();
+                setPageNumber(pages.length);
             }
+        };
+        if (selectedFile !== null && files) {
+            getPageCount(selectedFile);
         }
-        const mergedPdfBytes = await mergedPdf.save();
-        const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        window.open(url);
-    };
-
-    const mergePDFs = async (pdfFiles: FileP[]) => {
-        const mergedPdf = await PDFDocument.create();
-
-        for (const file of pdfFiles) {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await PDFDocument.load(arrayBuffer);
-            const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-            copiedPages.forEach((page) => {
-                mergedPdf.addPage(page);
-            });
-        }
-
-        const mergedPdfBytes = await mergedPdf.save();
-        const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        console.log(files[0].url);
-        window.open(url);
-
-    };
+    }, [selectedFile]);
 
     const moveFile = (dragIndex: number, hoverIndex: number) => {
-        const updatedFiles = [...files];
-        const [draggedFile] = updatedFiles.splice(dragIndex, 1);
-        updatedFiles.splice(hoverIndex, 0, draggedFile);
-        setFiles(updatedFiles);
-    };
-
-    const handleMerge = async () => {
-        if (files.length > 0) {
-            mergePDFs(files);
-        }
-    };
-
-    const handleEnumerate = async () => {
-        if (files.length > 0) {
-            enumerateFiles(files);
+        if (files && setFiles) {
+            const updatedFiles = [...files];
+            const [draggedFile] = updatedFiles.splice(dragIndex, 1);
+            updatedFiles.splice(hoverIndex, 0, draggedFile);
+            setFiles(updatedFiles);
         }
     };
 
     const removeFile = (index: number) => {
-        const updatedFiles = [...files];
-        updatedFiles.splice(index, 1);
-        setFiles(updatedFiles);
-    }
+        if (files && setFiles) {
+            const updatedFiles = [...files];
+            updatedFiles.splice(index, 1);
+            setFiles(updatedFiles);
+        }
+    };
+
+    useEffect(() => {
+        if (setFiles && files) {
+            setFiles(files);
+        }
+    }, [files])
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-10">
@@ -162,12 +115,12 @@ export function PageContentComponent({ func }: PageContentProps) {
                 {func}
             </div>
 
-            <DndProvider backend={HTML5Backend}>
-                <div className="flex flex-col justify-center items-end gap-2 w-1/1 min-h-[20vh] mx-0 sm:mx-6">
-                    <div className="h-[2rem]">
-                        {files.length > 0 && (
+            <div className="flex flex-col justify-center items-center  w-full min-h-[20vh] mx-0 sm:mx-6">
+                <div className="flex flex-col justify-center items-end gap-2">
+                    <div className=" h-[2rem]">
+                        {files && files?.length > 0 && (
                             <motion.div
-                                onClick={() => { setFiles([]), setRemoveFiles(false) }}
+                                onClick={() => { setFiles?.([]), setRemoveFiles(false); }}
                                 animate={{ width: removeFiles ? "13rem" : "2rem" }}
                                 onMouseOver={() => setRemoveFiles(true)}
                                 onMouseLeave={() => setRemoveFiles(false)}
@@ -175,16 +128,16 @@ export function PageContentComponent({ func }: PageContentProps) {
                                 style={{ transformOrigin: "left" }}
                                 className={`h-[2rem] dark:bg-black bg-primary rounded-full flex items-center cursor-pointer ${!removeFiles ? "justify-center" : "px-2"}`}
                             >
-                                <div className="overflow-hidden text-nowrap text-white text-sm flex justify-center items-center gap-2">
-                                    <i className="  pi pi-eraser" style={{ color: "white" }}></i>
+                                <div className=" text-nowrap text-white text-sm flex justify-center items-center gap-2">
+                                    <i className="pi pi-eraser" style={{ color: "white" }}></i>
                                     {removeFiles ? <span>Remover todos arquivos</span> : ""}
                                 </div>
                             </motion.div>
                         )}
                     </div>
 
-                    <div className="w-full h-full border-2 px-4 py-4 rounded-md flex items-center justify-center">
-                        {files.length === 0 ? (
+                    <div className="w-fit h-full border-2 px-4 py-4 rounded-md flex items-center justify-center">
+                        {files?.length === 0 ? (
                             <motion.span
                                 className="dark:text-white opacity-50 dark:opacity-100 text-xl font-bold"
                                 transition={{ duration: 0.5 }}
@@ -198,7 +151,7 @@ export function PageContentComponent({ func }: PageContentProps) {
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                {files.map((file, index) => (
+                                {files?.map((file, index) => (
                                     <div key={file.url} onClick={() => setSelectedFile(index)}>
                                         <CardComponent
                                             key={file.url}
@@ -212,11 +165,10 @@ export function PageContentComponent({ func }: PageContentProps) {
                             </motion.div>
                         )}
                     </div>
-
                 </div>
-            </DndProvider>
+            </div>
             <AnimatePresence>
-                {selectedFile !== null && pageNumber && (
+                {files && selectedFile !== null && pageNumber && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -227,7 +179,7 @@ export function PageContentComponent({ func }: PageContentProps) {
                             <div className="flex justify-end w-full">
                                 <i className="pi pi-times cursor-pointer" style={{ color: "white" }} onClick={() => setSelectedFile(null)}></i>
                             </div>
-                            <PDFEditComponent file={files[selectedFile]} pageNumber={pageNumber}></PDFEditComponent>
+                            <PDFEditComponent file={files?.[selectedFile]} pageNumber={pageNumber}></PDFEditComponent>
                         </div>
                     </motion.div>
                 )}

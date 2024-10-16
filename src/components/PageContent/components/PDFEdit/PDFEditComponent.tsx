@@ -4,6 +4,7 @@ import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.entry";
 import { FileP } from "@/models";
 import { motion } from "framer-motion";
 import BrushIcon from '@mui/icons-material/Brush';
+import { rgb } from "pdf-lib";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -14,6 +15,7 @@ interface PDFEditProps {
 
 export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEditProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
     const [pdf, setPdf] = useState<any>(null);
     const [pageNumber, setPageNumber] = useState(initialPageNumber);
     const [zoomLevel, setZoomLevel] = useState(1);
@@ -24,6 +26,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
     const [isDrawing, setIsDrawing] = useState(false);
     const [mode, setMode] = useState<'draw' | 'erase' | 'view'>('view');
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [inputRange, setInputRange] = useState(false);
 
     useEffect(() => {
         const loadPDF = async () => {
@@ -62,28 +65,16 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
         await renderTaskRef.current.promise;
         renderTaskRef.current = null;
 
-        loadPreviousDrawing();
-    };
-
-
-    const loadPreviousDrawing = () => {
-        const savedDrawing = localStorage.getItem(`drawing_${file.url}_page_${pageNumber}`);
-        if (savedDrawing && canvasRef.current) {
-            const canvas = canvasRef.current;
-            const context = canvas.getContext("2d");
-
-            const image = new Image();
-            image.src = savedDrawing;
-            image.onload = () => {
-                context?.drawImage(image, 0, 0);
-            };
+        if (drawingCanvasRef.current) {
+            const drawingCanvas = drawingCanvasRef.current;
+            drawingCanvas.height = viewport.height;
+            drawingCanvas.width = viewport.width;
         }
     };
 
     useEffect(() => {
         if (pdf) {
             renderPdf(pageNumber, zoomLevel);
-            loadPreviousDrawing();
         }
     }, [pdf, pageNumber, zoomLevel]);
 
@@ -104,8 +95,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
     };
 
     const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        const canvas = canvasRef.current;
-        const rect = canvas?.getBoundingClientRect();
+        const canvasDrawing = drawingCanvasRef.current;
+        const rect = canvasDrawing?.getBoundingClientRect();
         setMousePos({
             x: e.clientX - (rect?.left ?? 0),
             y: e.clientY - (rect?.top ?? 0),
@@ -116,11 +107,11 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
     };
 
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!isDrawing || !canvasRef.current) return;
+        if (!isDrawing || !drawingCanvasRef.current) return;
 
-        const canvas = canvasRef.current;
-        const context = canvas.getContext("2d");
-        const rect = canvas.getBoundingClientRect();
+        const canvasDrawing = drawingCanvasRef.current;
+        const context = canvasDrawing.getContext("2d");
+        const rect = canvasDrawing.getBoundingClientRect();
 
         const newMousePos = {
             x: e.clientX - rect.left,
@@ -128,8 +119,15 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
         };
 
         if (context) {
-            context.strokeStyle = mode === "draw" ? colorSelected : "#FFFFFF";
-            context.lineWidth = mode === "draw" ? 2 : 10;
+            if (mode === "draw") {
+                context.globalCompositeOperation = "source-over";
+                context.strokeStyle = colorSelected;
+                context.lineWidth = 2;
+            } else if (mode === "erase") {
+                context.globalCompositeOperation = "destination-out";
+                context.lineWidth = 10;
+            }
+
             context.beginPath();
             context.moveTo(mousePos.x, mousePos.y);
             context.lineTo(newMousePos.x, newMousePos.y);
@@ -139,13 +137,9 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
         }
     };
 
+
     const stopDrawing = () => {
         setIsDrawing(false);
-        if (canvasRef.current) {
-            const canvas = canvasRef.current;
-            const imageData = canvas.toDataURL();
-            localStorage.setItem(`drawing_${file.url}_page_${pageNumber}`, imageData);
-        }
     };
 
 
@@ -157,7 +151,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
         <div className="relative flex flex-col items-center bg-gray-300 dark:bg-gray-500 dark:bg- w-full md:h-[93%] rounded-md">
             {file.url != null ? (
                 <>
-                    <div className="flex flex-col absolute right-0 top-[45%] px-4 py-4 gap-4">
+                    <div className="z-30 flex flex-col absolute right-0 top-[45%] px-4 py-4 gap-4">
                         <div
                             onMouseOver={() => setColorPickerOpen(true)}
                             onMouseOut={() => setColorPickerOpen(false)}
@@ -170,7 +164,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
                             >
                                 <div style={{ backgroundColor: colorSelected }} className={`w-5 h-5 rounded-full`}></div>
                             </motion.div>
-                            {colorPickerOpen ? (
+                            {colorPickerOpen && (
                                 <motion.div
                                     transition={{ type: "spring", duration: 0.2, ease: [0, 0.71, 0.2, 1.01] }}
                                     animate={{ width: colorSelected ? "13rem" : "0rem", padding: "6px" }}
@@ -209,7 +203,26 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
                                         className={`bg-[#FFFFFF] cursor-pointer w-6 h-6 rounded-full`}>
                                     </motion.div>
                                 </motion.div>
-                            ) : ""}
+                            )}
+                        </div>
+                        <div
+                            onMouseOver={() => setInputRange(true)}
+                            onMouseOut={() => setInputRange(false)}
+                            className="relative">
+                            <motion.div
+                                transition={{ type: "spring", duration: 0.1, ease: "easeInOut" }}
+                                animate={{ borderRadius: inputRange ? "0% 100% 100% 0%" : "100%" }}
+                                className={`bg-primary dark:bg-slate-600 w-9 h-9 flex justify-center items-center ${mode === 'draw' ? 'active' : ''}`}
+                            >
+                            </motion.div>
+                            {inputRange && (
+                                <motion.div
+                                    transition={{ type: "spring", duration: 0.2, ease: [0, 0.71, 0.2, 1.01] }}
+                                    animate={{ width: inputRange ? "13rem" : "0rem", padding: "6px" }}
+                                    className="grid grid-cols-5 h-9 absolute gap-3 bg-primary dark:bg-slate-600 right-9 top-0 rounded-l-full">
+                                    <input type="range" name="" id="" />
+                                </motion.div>
+                            )}
                         </div>
                         <motion.div
                             whileHover={{ scale: 1.1, rotate: 1 }}
@@ -236,49 +249,59 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
                             <i className="pi pi-eraser" style={{ color: "white" }}></i>
                         </motion.div>
                     </div>
-                    <div className="flex justify-center py-2 gap-3">
-                        <div className="flex gap-4">
-                            <button onClick={zoomOut}>
-                                <i className="pi pi-minus" style={{ color: "white" }}></i>
-                            </button>
-                            <button onClick={zoomIn}>
-                                <i className="pi pi-plus" style={{ color: "white" }}></i>
-                            </button>
-                        </div>
+                    <div className="my-2 mx-2 relative flex justify-center items-center w-full h-full overflow-auto">
+                        <canvas
+                            ref={canvasRef}
+                            className="absolute z-0"
 
-                        <div className="flex gap-1">
+                        ></canvas>
+                        <canvas
+                            ref={drawingCanvasRef}
+                            className="absolute z-10"
+                            onMouseDown={startDrawing}
+                            onMouseMove={draw}
+                            onMouseUp={stopDrawing}
+                            onMouseLeave={stopDrawing}
+                        >
+                        </canvas>
+                    </div>
+                    <div className="flex gap-4 py-2">
+                        <div className="flex gap-2">
+                            <motion.div
+                                whileTap={{ scale: 0.9 }}
+                                whileHover={{ scale: 1.1, rotate: 1 }}
+                                className={`bg-primary dark:bg-slate-600 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer ${mode === 'erase' ? 'active' : ''}`}
+                                onClick={zoomOut}
+                            >
+                                <i className="pi pi-minus" style={{ color: "white" }}></i>
+                            </motion.div>
+                            <motion.div
+                                whileTap={{ scale: 0.9 }}
+                                whileHover={{ scale: 1.1, rotate: 1 }}
+                                className={`bg-primary dark:bg-slate-600 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer ${mode === 'erase' ? 'active' : ''}`}
+                                onClick={zoomIn}
+                            >
+                                <i className="pi pi-plus" style={{ color: "white" }}></i>
+                            </motion.div>
+                        </div>
+                        <div className="flex items-center gap-1">
                             <input
                                 type="number"
                                 value={pageNumber}
                                 onChange={handlePageChange}
                                 className="border rounded px-2"
                                 min={1}
-                                max={pdf?.numPages || 1}
                             />
                             <div>
                                 <span> de {pdf?.numPages}</span>
                             </div>
                         </div>
                     </div>
-                    <div className="flex justify-center items-center w-full h-full overflow-auto">
-                        <canvas
-                            ref={canvasRef}
-                            className="block"
-                            style={{
-                                maxWidth: "100%",
-                                height: "auto",
-                            }}
-                            onMouseDown={startDrawing}
-                            onMouseMove={draw}
-                            onMouseUp={stopDrawing}
-                            onMouseLeave={stopDrawing}
-                        ></canvas>
-                    </div>
                 </>
             )
                 :
                 ("")
             }
-        </div>
+        </div >
     );
 };

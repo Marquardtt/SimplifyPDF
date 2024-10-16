@@ -1,3 +1,5 @@
+'use client'
+
 import { PageContentComponent } from "@/components/PageContent";
 import { GroupComponent } from "@/components/PageContent/components/Group";
 

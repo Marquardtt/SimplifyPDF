@@ -1,3 +1,5 @@
+'use client'
+
 import { PageContentComponent } from "@/components/PageContent";
 import { EnumerateComponent } from "@/components/PageContent/components/Enumerate";
 

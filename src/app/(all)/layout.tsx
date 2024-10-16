@@ -14,9 +14,9 @@ export default function Layout({ children }: LayoutProps) {
       id="body"
       className={` font-montserrat w-screen h-screen bg-white flex flex-col justify-between  dark:bg-slate-600 transition-all`}
     >
-      <header><HeaderComponent/></header>
+      <header><HeaderComponent /></header>
       <div className="py-24">{children}</div>
-      {/* <footer className="bottom-0"><FooterComponent /></footer> */}
     </body>
+    
   );
 }
