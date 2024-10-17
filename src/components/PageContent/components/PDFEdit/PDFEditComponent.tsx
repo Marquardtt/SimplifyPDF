@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.entry";
 import { FileP } from "@/models";
 import { motion } from "framer-motion";
 import BrushIcon from '@mui/icons-material/Brush';
-import { rgb } from "pdf-lib";
+import { rgb, PDFDocument } from "pdf-lib"; 
+import { FilesContext } from "@/contexts/FilesContext";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -27,6 +28,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
     const [mode, setMode] = useState<'draw' | 'erase' | 'view'>('view');
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [inputRange, setInputRange] = useState(false);
+    const { files, setFiles } = useContext(FilesContext);
 
     useEffect(() => {
         const loadPDF = async () => {
@@ -77,7 +79,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
             renderPdf(pageNumber, zoomLevel);
         }
     }, [pdf, pageNumber, zoomLevel]);
-
 
     const handlePageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newPage = parseInt(e.target.value);
@@ -137,11 +138,60 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
         }
     };
 
+    const save = async () => {
+        const drawingCanvas = drawingCanvasRef.current;
+        const pdfCanvas = canvasRef.current;
 
-    const stopDrawing = () => {
+        if (!drawingCanvas || !pdfCanvas) return;
+
+        const pdfContext = pdfCanvas.getContext("2d");
+
+        if (pdfContext) {
+            pdfContext.drawImage(drawingCanvas, 0, 0);
+            const finalImageDataURL = pdfCanvas.toDataURL("image/png");
+            const response = await fetch(finalImageDataURL);
+            const blob = await response.blob();
+            const imageArrayBuffer = await blob.arrayBuffer();
+
+            const pdfDoc = await PDFDocument.create();
+            const pngImage = await pdfDoc.embedPng(imageArrayBuffer);
+            const page = pdfDoc.addPage([pdfCanvas.width, pdfCanvas.height]);
+            page.drawImage(pngImage, {
+                x: 0,
+                y: 0,
+                width: pdfCanvas.width,
+                height: pdfCanvas.height,
+            });
+
+            const pdfBytes = await pdfDoc.save();
+            const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+            const fileP = new FileP(
+                URL.createObjectURL(pdfBlob),
+                file.name,
+                pdfBlob.size,
+                'application/pdf',
+                Date.now(),
+                '',
+                pdfBlob.slice.bind(pdfBlob),
+                pdfBlob.stream.bind(pdfBlob),
+                pdfBlob.text.bind(pdfBlob),
+                pdfBlob.arrayBuffer.bind(pdfBlob),
+            );
+            if (files && setFiles) {
+                const updatedFiles = [...files];
+                const editedFileIndex = files.indexOf(file);
+                if (editedFileIndex !== -1) {
+                    updatedFiles[editedFileIndex] = fileP; 
+                    setFiles(updatedFiles); 
+                }
+            }
+
+        }
+    }
+
+    const stopDrawing = async () => {
         setIsDrawing(false);
     };
-
 
     const toggleMode = (newMode: 'draw' | 'erase' | 'view') => {
         setMode(newMode);
@@ -159,7 +209,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
                             <motion.div
                                 transition={{ type: "spring", duration: 0.1, ease: "easeInOut" }}
                                 animate={{ borderRadius: colorPickerOpen ? "0% 100% 100% 0%" : "100%" }}
-                                className={`bg-primary dark:bg-slate-600 w-9 h-9 flex justify-center items-center ${mode === 'draw' ? 'active' : ''}`}
+                                className={`rounded-r-full bg-primary dark:bg-slate-600 w-9 h-9 flex justify-center items-center ${mode === 'draw' ? 'active' : ''}`}
                                 onClick={() => toggleMode('draw')}
                             >
                                 <div style={{ backgroundColor: colorSelected }} className={`w-5 h-5 rounded-full`}></div>
@@ -247,6 +297,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
                             onClick={() => (toggleMode('erase'))}
                         >
                             <i className="pi pi-eraser" style={{ color: "white" }}></i>
+                        </motion.div>
+                        <motion.div
+                            whileHover={{ scale: 1.1, rotate: 1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className={`bg-primary dark:bg-slate-600 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer}`}
+                            onClick={save}
+                        >
+                            <i className="pi pi-arrows-alt" style={{ color: "white" }}></i>
                         </motion.div>
                     </div>
                     <div className="my-2 mx-2 relative flex justify-center items-center w-full h-full overflow-auto">

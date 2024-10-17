@@ -128,7 +128,7 @@ export function PageContentComponent({ func }: PageContentProps) {
                                 style={{ transformOrigin: "left" }}
                                 className={`h-[2rem] dark:bg-black bg-primary rounded-full flex items-center cursor-pointer ${!removeFiles ? "justify-center" : "px-2"}`}
                             >
-                                <div className=" text-nowrap text-white text-sm flex justify-center items-center gap-2">
+                                <div className="overflow-hidden text-nowrap text-white text-sm flex justify-center items-center gap-2">
                                     <i className="pi pi-eraser" style={{ color: "white" }}></i>
                                     {removeFiles ? <span>Remover todos arquivos</span> : ""}
                                 </div>
@@ -175,7 +175,7 @@ export function PageContentComponent({ func }: PageContentProps) {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 flex items-center justify-center z-50">
-                        <div className="md:w-[60vw] md:h-[50vw] lg:h-[94%] lg:w-1/1 bg-primary dark:bg-slate-600 rounded-md flex flex-col items-center gap-4 p-4">
+                        <div className="md:w-[60vw] md:h-[50vw] lg:h-[94%] lg:w-1/1 bg-gray-400 dark:bg-slate-600 rounded-md flex flex-col items-center gap-4 p-4">
                             <div className="flex justify-end w-full">
                                 <i className="pi pi-times cursor-pointer" style={{ color: "white" }} onClick={() => setSelectedFile(null)}></i>
                             </div>

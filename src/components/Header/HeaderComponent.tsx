@@ -67,9 +67,9 @@ export function HeaderComponent() {
                         <motion.div className={`flex flex-col gap-3 w-full ${hover && show ? "block" : "none"}`} animate={{ opacity: show ? "100%" : "0%" }}>
                             <motion.div 
                             animate={{}}
-                            onClick={() => (router.push('/merge'))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></motion.div>
-                            <motion.div onClick={() => (router.push('/enumerate'))} className="gap-2  flex items-center text-sm cursor-pointer"><i className="pi pi-sort-numeric-up" style={{ fontSize: 15 }}></i><span className="">Numerar PDFs</span></motion.div>
-                            <motion.div onClick={() => (router.push('/edit'))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-cog" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
+                            onClick={() => (router.push('/merge'), setHover(false))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></motion.div>
+                            <motion.div onClick={() => (router.push('/enumerate'), setHover(false))} className="gap-2  flex items-center text-sm cursor-pointer"><i className="pi pi-sort-numeric-up" style={{ fontSize: 15 }}></i><span className="">Numerar PDFs</span></motion.div>
+                            <motion.div onClick={() => (alert("Pagina ainda em desenvolvimento"))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-cog" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
                         </motion.div>
                     </motion.div>
                 </div>
@@ -81,7 +81,7 @@ export function HeaderComponent() {
                     <motion.div
                         animate={{ opacity: hover ? "100%" : "0%" }}
                         className="flex flex-col justify-center gap-4 ">
-                        <div className="flex items-center gap-6 cursor-pointer">
+                        <div onClick={() => (alert("Pagina ainda em desenvolvimento"))} className="flex items-center gap-6 cursor-pointer">
                             <span>Configurações</span>
                         </div>
                     </motion.div>
@@ -90,5 +90,3 @@ export function HeaderComponent() {
         </>
     )
 }
-
-{/*  */ }
