@@ -175,12 +175,7 @@ export function PageContentComponent({ func }: PageContentProps) {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 flex items-center justify-center z-50">
-                        <div className="md:w-[60vw] md:h-[50vw] lg:h-[94%] lg:w-1/1 bg-gray-400 dark:bg-slate-600 rounded-md flex flex-col items-center gap-4 p-4">
-                            <div className="flex justify-end w-full">
-                                <i className="pi pi-times cursor-pointer" style={{ color: "white" }} onClick={() => setSelectedFile(null)}></i>
-                            </div>
-                            <PDFEditComponent file={files?.[selectedFile]} pageNumber={pageNumber}></PDFEditComponent>
-                        </div>
+                        <PDFEditComponent file={files?.[selectedFile]} pageNumber={pageNumber} closeModal={() => setSelectedFile(null)}></PDFEditComponent>
                     </motion.div>
                 )}
             </AnimatePresence>

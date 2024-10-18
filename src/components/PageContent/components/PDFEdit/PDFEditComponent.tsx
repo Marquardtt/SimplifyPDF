@@ -2,9 +2,9 @@ import { useContext, useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.entry";
 import { FileP } from "@/models";
-import { motion } from "framer-motion";
+import { animate, motion } from "framer-motion";
 import BrushIcon from '@mui/icons-material/Brush';
-import { rgb, PDFDocument } from "pdf-lib"; 
+import { rgb, PDFDocument, LineCapStyle, drawLine, ColorTypes } from "pdf-lib";
 import { FilesContext } from "@/contexts/FilesContext";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -12,9 +12,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 interface PDFEditProps {
     file: FileP;
     pageNumber: number;
+    closeModal: (a:any) => void;
 }
 
-export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEditProps) => {
+export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeModal }: PDFEditProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
     const [pdf, setPdf] = useState<any>(null);
@@ -29,6 +30,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [inputRange, setInputRange] = useState(false);
     const { files, setFiles } = useContext(FilesContext);
+    const [colorSize, setColorSize] = useState<number | string>(2);
+    const [drawings, setDrawings] = useState<any[]>([]);
 
     useEffect(() => {
         const loadPDF = async () => {
@@ -107,11 +110,38 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
         }
     };
 
+    const distanceToLine = (lineStart: { x: number; y: number }, lineEnd: { x: number; y: number }, point: { x: number; y: number }) => {
+        const A = point.x - lineStart.x;
+        const B = point.y - lineStart.y;
+        const C = lineEnd.x - lineStart.x;
+        const D = lineEnd.y - lineStart.y;
+
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        const param = (len_sq !== 0) ? (dot / len_sq) : -1;
+
+        let xx, yy;
+
+        if (param < 0) {
+            xx = lineStart.x;
+            yy = lineStart.y;
+        } else if (param > 1) {
+            xx = lineEnd.x;
+            yy = lineEnd.y;
+        } else {
+            xx = lineStart.x + param * C;
+            yy = lineStart.y + param * D;
+        }
+
+        const dx = point.x - xx;
+        const dy = point.y - yy;
+        return Math.sqrt(dx * dx + dy * dy);
+    };
+
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDrawing || !drawingCanvasRef.current) return;
 
         const canvasDrawing = drawingCanvasRef.current;
-        const context = canvasDrawing.getContext("2d");
         const rect = canvasDrawing.getBoundingClientRect();
 
         const newMousePos = {
@@ -119,77 +149,120 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
             y: e.clientY - rect.top,
         };
 
+        if (mode === "draw") {
+            const newDrawing = {
+                type: 'line',
+                color: colorSelected,
+                lineWidth: colorSize as number,
+                from: { ...mousePos },
+                to: { ...newMousePos }
+            };
+            setDrawings((prev) => [...prev, newDrawing]);
+        } else if (mode === "erase") {
+            const eraseRadius = (colorSize as number) * 2;
+            setDrawings((prev) => {
+                return prev.filter(drawing => {
+                    if (drawing.type === 'line') {
+                        const distFromStart = distanceToLine(drawing.from, drawing.to, newMousePos);
+                        return distFromStart > eraseRadius;
+                    }
+                    return true;
+                });
+            });
+        }
+
+        setMousePos(newMousePos);
+        renderDrawings();
+    };
+
+    const renderDrawings = () => {
+        if (!drawingCanvasRef.current) return;
+
+        const canvasDrawing = drawingCanvasRef.current;
+        const context = canvasDrawing.getContext("2d");
         if (context) {
-            if (mode === "draw") {
-                context.globalCompositeOperation = "source-over";
-                context.strokeStyle = colorSelected;
-                context.lineWidth = 2;
-            } else if (mode === "erase") {
-                context.globalCompositeOperation = "destination-out";
-                context.lineWidth = 10;
-            }
-
-            context.beginPath();
-            context.moveTo(mousePos.x, mousePos.y);
-            context.lineTo(newMousePos.x, newMousePos.y);
-            context.stroke();
-
-            setMousePos(newMousePos);
+            context.clearRect(0, 0, canvasDrawing.width, canvasDrawing.height);
+            drawings.forEach((drawing) => {
+                context.beginPath();
+                context.lineWidth = drawing.lineWidth;
+                context.strokeStyle = drawing.color;
+                context.lineCap = 'round';
+                context.moveTo(drawing.from.x, drawing.from.y);
+                context.lineTo(drawing.to.x, drawing.to.y);
+                context.stroke();
+            });
         }
     };
 
     const save = async () => {
-        const drawingCanvas = drawingCanvasRef.current;
-        const pdfCanvas = canvasRef.current;
+        const pdfDoc = await PDFDocument.create();
+        const originalPdfBytes = await fetch(file.url).then((res) => res.arrayBuffer());
+        const originalPdf = await PDFDocument.load(originalPdfBytes);
 
-        if (!drawingCanvas || !pdfCanvas) return;
+        const [originalPage] = await pdfDoc.copyPages(originalPdf, [pageNumber - 1]);
+        pdfDoc.addPage(originalPage);
 
-        const pdfContext = pdfCanvas.getContext("2d");
+        const page = pdfDoc.getPages()[0];
+        const { height } = originalPage.getSize();
 
-        if (pdfContext) {
-            pdfContext.drawImage(drawingCanvas, 0, 0);
-            const finalImageDataURL = pdfCanvas.toDataURL("image/png");
-            const response = await fetch(finalImageDataURL);
-            const blob = await response.blob();
-            const imageArrayBuffer = await blob.arrayBuffer();
-
-            const pdfDoc = await PDFDocument.create();
-            const pngImage = await pdfDoc.embedPng(imageArrayBuffer);
-            const page = pdfDoc.addPage([pdfCanvas.width, pdfCanvas.height]);
-            page.drawImage(pngImage, {
-                x: 0,
-                y: 0,
-                width: pdfCanvas.width,
-                height: pdfCanvas.height,
-            });
-
-            const pdfBytes = await pdfDoc.save();
-            const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
-            const fileP = new FileP(
-                URL.createObjectURL(pdfBlob),
-                file.name,
-                pdfBlob.size,
-                'application/pdf',
-                Date.now(),
-                '',
-                pdfBlob.slice.bind(pdfBlob),
-                pdfBlob.stream.bind(pdfBlob),
-                pdfBlob.text.bind(pdfBlob),
-                pdfBlob.arrayBuffer.bind(pdfBlob),
+        const drawColor = (color: string) => {
+            return rgb(
+                parseInt(color.slice(1, 3), 16) / 255,
+                parseInt(color.slice(3, 5), 16) / 255,
+                parseInt(color.slice(5, 7), 16) / 255
             );
-            if (files && setFiles) {
-                const updatedFiles = [...files];
-                const editedFileIndex = files.indexOf(file);
-                if (editedFileIndex !== -1) {
-                    updatedFiles[editedFileIndex] = fileP; 
-                    setFiles(updatedFiles); 
-                }
-            }
+        };
 
+        drawings.forEach((drawing) => {
+            const startY = height - drawing.from.y;
+            const endY = height - drawing.to.y;
+
+            if (drawing.type === 'line') {
+                page.drawLine({
+                    start: { x: drawing.from.x, y: startY },
+                    end: { x: drawing.to.x, y: endY },
+                    lineCap: LineCapStyle.Round,
+                    color: drawColor(drawing.color),
+                    thickness: Number(drawing.lineWidth),
+                    opacity: 1,
+                });
+            } else if (drawing.type === 'erase') {
+                page.drawLine({
+                    start: { x: drawing.from.x, y: startY },
+                    end: { x: drawing.to.x, y: endY },
+                    lineCap: LineCapStyle.Round,
+                    thickness: Number(drawing.lineWidth),
+                    color: rgb(1, 1, 1), 
+                    opacity: 0.5, 
+                });
+            }
+        });
+
+
+        const pdfBytes = await pdfDoc.save();
+        const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+        const fileP = new File([pdfBlob], file.name);
+        const newFileP = new FileP(
+            URL.createObjectURL(fileP),
+            fileP.name,
+            fileP.size,
+            fileP.type,
+            fileP.lastModified,
+            fileP.webkitRelativePath,
+            fileP.slice.bind(fileP),
+            fileP.stream.bind(fileP),
+            fileP.text.bind(fileP),
+            fileP.arrayBuffer.bind(fileP)
+        );
+
+        if (setFiles && files) {
+            const newFiles = [...files];
+            newFiles.splice(newFiles.indexOf(file), 1, newFileP);
+            setFiles(newFiles);
         }
     }
 
-    const stopDrawing = async () => {
+    const stopDrawing = () => {
         setIsDrawing(false);
     };
 
@@ -198,131 +271,134 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
     };
 
     return (
-        <div className="relative flex flex-col items-center bg-gray-300 dark:bg-gray-500 dark:bg- w-full md:h-[93%] rounded-md">
-            {file.url != null ? (
-                <>
-                    <div className="z-30 flex flex-col absolute right-0 top-[45%] px-4 py-4 gap-4">
-                        <div
-                            onMouseOver={() => setColorPickerOpen(true)}
-                            onMouseOut={() => setColorPickerOpen(false)}
-                            className="relative">
-                            <motion.div
-                                transition={{ type: "spring", duration: 0.1, ease: "easeInOut" }}
-                                animate={{ borderRadius: colorPickerOpen ? "0% 100% 100% 0%" : "100%" }}
-                                className={`rounded-r-full bg-primary dark:bg-slate-600 w-9 h-9 flex justify-center items-center ${mode === 'draw' ? 'active' : ''}`}
-                                onClick={() => toggleMode('draw')}
-                            >
-                                <div style={{ backgroundColor: colorSelected }} className={`w-5 h-5 rounded-full`}></div>
-                            </motion.div>
-                            {colorPickerOpen && (
-                                <motion.div
-                                    transition={{ type: "spring", duration: 0.2, ease: [0, 0.71, 0.2, 1.01] }}
-                                    animate={{ width: colorSelected ? "13rem" : "0rem", padding: "6px" }}
-                                    className="grid grid-cols-5 h-9 absolute gap-3 bg-primary dark:bg-slate-600 right-9 top-0 rounded-l-full">
-                                    <div className="bg-white w-6 h-6 rounded-full ">
-                                        <motion.input
-                                            style={{ position: "absolute", opacity: 0 }}
-                                            id="colorPicker"
-                                            type="color"
-                                            whileTap={{ scale: 0.9 }}
-                                            onChange={(e) => (setColorSelected(e.currentTarget.value), setColorPicker(e.currentTarget.value))}
-                                        >
-                                        </motion.input>
-                                        <label className="flex px-[2px] pt-[2px]" htmlFor="colorPicker">
-                                            <BrushIcon sx={{ color: colorPicker, fontSize: 20 }}></BrushIcon>
-                                        </label>
-                                    </div>
-                                    <motion.div
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => (setColorSelected("#7DDA58"), setColorPicker("#000000"))}
-                                        className={`bg-[#7DDA58] cursor-pointer w-6 h-6 rounded-full`}>
-                                    </motion.div>
-                                    <motion.div
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => (setColorSelected("#D20103"), setColorPicker("#000000"))}
-                                        className={`bg-[#D20103] cursor-pointer w-6 h-6 rounded-full`}>
-                                    </motion.div>
-                                    <motion.div
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => (setColorSelected("#000000"), setColorPicker("#000000"))}
-                                        className={`bg-[#000000] cursor-pointer w-6 h-6 rounded-full`}>
-                                    </motion.div>
-                                    <motion.div
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => (setColorSelected("#FFFFFF"), setColorPicker("#000000"))}
-                                        className={`bg-[#FFFFFF] cursor-pointer w-6 h-6 rounded-full`}>
-                                    </motion.div>
-                                </motion.div>
-                            )}
-                        </div>
-                        <div
-                            onMouseOver={() => setInputRange(true)}
-                            onMouseOut={() => setInputRange(false)}
-                            className="relative">
-                            <motion.div
-                                transition={{ type: "spring", duration: 0.1, ease: "easeInOut" }}
-                                animate={{ borderRadius: inputRange ? "0% 100% 100% 0%" : "100%" }}
-                                className={`bg-primary dark:bg-slate-600 w-9 h-9 flex justify-center items-center ${mode === 'draw' ? 'active' : ''}`}
-                            >
-                            </motion.div>
-                            {inputRange && (
-                                <motion.div
-                                    transition={{ type: "spring", duration: 0.2, ease: [0, 0.71, 0.2, 1.01] }}
-                                    animate={{ width: inputRange ? "13rem" : "0rem", padding: "6px" }}
-                                    className="grid grid-cols-5 h-9 absolute gap-3 bg-primary dark:bg-slate-600 right-9 top-0 rounded-l-full">
-                                    <input type="range" name="" id="" />
-                                </motion.div>
-                            )}
-                        </div>
-                        <motion.div
-                            whileHover={{ scale: 1.1, rotate: 1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className={`bg-primary dark:bg-slate-600 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer ${mode === 'draw' ? 'active' : ''}`}
-                            onClick={() => toggleMode('draw')}
-                        >
-                            <i className="pi pi-pencil" style={{ color: "white" }}></i>
-                        </motion.div>
-                        <motion.div
-                            whileHover={{ scale: 1.1, rotate: 1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className={`bg-primary dark:bg-slate-600 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer ${mode === 'draw' ? 'active' : ''}`}
-                            onClick={() => toggleMode('view')}
-                        >
-                            <i className="pi pi-arrows-alt" style={{ color: "white" }}></i>
-                        </motion.div>
-                        <motion.div
-                            whileTap={{ scale: 0.9 }}
-                            whileHover={{ scale: 1.1, rotate: 1 }}
-                            className={`bg-primary dark:bg-slate-600 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer ${mode === 'erase' ? 'active' : ''}`}
-                            onClick={() => (toggleMode('erase'))}
-                        >
-                            <i className="pi pi-eraser" style={{ color: "white" }}></i>
-                        </motion.div>
-                        <motion.div
-                            whileHover={{ scale: 1.1, rotate: 1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className={`bg-primary dark:bg-slate-600 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer}`}
-                            onClick={save}
-                        >
-                            <i className="pi pi-arrows-alt" style={{ color: "white" }}></i>
-                        </motion.div>
+        <div className="md:w-[90vw] md:h-[50vw] lg:h-[94%] lg:w-1/1 bg-gray-400 dark:bg-slate-600 rounded-md flex flex-col items-center justify-end text-white">
+            <div className="flex items-center gap-4 my-2 w-full h-12 px-3 justify-between">
+                <div className="flex gap-3">
+                    <div className="flex justify-center items-center w-9 h-9 rounded-full bg-primary">
+                        <i className="pi pi-book" style={{ color: "white" }}></i>
                     </div>
-                    <div className="my-2 mx-2 relative flex justify-center items-center w-full h-full overflow-auto">
-                        <canvas
-                            ref={canvasRef}
-                            className="absolute z-0"
+                    <div
+                        className="relative"
+                        onMouseOver={() => setColorPickerOpen(true)}
+                        onMouseOut={() => setColorPickerOpen(false)}
+                    >
+                        <div
+                            className={`relative flex flex-col justify-center bg-primary dark:bg-slate-600 rounded-md  w-44 h-9  items-start z-40 `}>
+                            <div className="w-full flex items-center justify-between gap-3 px-3" onClick={() => toggleMode('draw')}>
+                                <div
+                                    className="flex gap-2 items-center cursor-pointer">
+                                    <i className="pi pi-pencil" style={{ color: "white" }}></i>
+                                    <span>Desenhar</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <motion.i
+                                        className="w-fit h-fit pi pi-angle-up"
+                                        animate={{ rotate: colorPickerOpen ? 180 : 0 }}>
+                                    </motion.i>
+                                </div>
+                            </div>
+                        </div>
+                        {colorPickerOpen && (
+                            <>
+                                <motion.div
+                                    className="absolute w-full z-40"
+                                    initial={{ y: -20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    exit={{ y: -20, opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <div className="h-2 bg-transparent"></div>
+                                    <motion.div className="bg-primary w-full rounded-md py-2 flex flex-col gap-3">
+                                        <div className="flex gap-3 justify-center">
+                                            <motion.div
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => (setColorSelected("#7DDA58"), setColorPicker("#000000"))}
+                                                className={`bg-[#7DDA58] cursor-pointer w-7 h-7 rounded-full`}
+                                            />
+                                            <motion.div
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => (setColorSelected("#D20103"), setColorPicker("#000000"))}
+                                                className={`bg-[#D20103] cursor-pointer w-7 h-7 rounded-full`}
+                                            />
+                                            <motion.div
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => (setColorSelected("#000000"), setColorPicker("#000000"))}
+                                                className={`bg-[#000000] cursor-pointer w-7 h-7 rounded-full`}
+                                            />
+                                            <motion.div
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => (setColorSelected("#FFFFFF"), setColorPicker("#000000"))}
+                                                className={`bg-[#FFFFFF] cursor-pointer w-7 h-7 rounded-full`}
+                                            />
+                                        </div>
+                                        <div className="flex gap-3 justify-center">
+                                            <div className="bg-white w-7 h-7 rounded-full relative">
+                                                <motion.input
+                                                    style={{ position: "absolute", opacity: 0 }}
+                                                    id="colorPicker"
+                                                    type="color"
+                                                    whileTap={{ scale: 0.9 }}
+                                                    onChange={(e) => (setColorSelected(e.currentTarget.value), setColorPicker(e.currentTarget.value))}
+                                                >
+                                                </motion.input>
+                                                <label className="flex justify-center items-center" htmlFor="colorPicker">
+                                                    <BrushIcon sx={{ color: colorPicker, fontSize: 20 }}></BrushIcon>
+                                                </label>
+                                            </div>
+                                            <motion.div
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => (setColorSelected("#D20103"), setColorPicker("#000000"))}
+                                                className={`bg-[#D20103] cursor-pointer w-7 h-7 rounded-full`}>
+                                            </motion.div>
+                                            <motion.div
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => (setColorSelected("#000000"), setColorPicker("#000000"))}
+                                                className={`bg-[#000000] cursor-pointer w-7 h-7 rounded-full`}>
+                                            </motion.div>
+                                            <motion.div
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => (setColorSelected("#FFFFFF"), setColorPicker("#000000"))}
+                                                className={`bg-[#FFFFFF] cursor-pointer w-7 h-7 rounded-full`}>
+                                            </motion.div>
+                                        </div>
+                                        <div className="flex gap-3 justify-center">
 
-                        ></canvas>
-                        <canvas
-                            ref={drawingCanvasRef}
-                            className="absolute z-10"
-                            onMouseDown={startDrawing}
-                            onMouseMove={draw}
-                            onMouseUp={stopDrawing}
-                            onMouseLeave={stopDrawing}
-                        >
-                        </canvas>
+                                            <svg
+                                                style={{ display: "block", margin: "0 auto", transform: "scale(0.8)" }}
+                                                width="200"
+                                                height="40"
+                                                viewBox="0 0 150 40"
+                                                preserveAspectRatio="xMidYMid meet"
+                                            >
+                                                <path
+
+                                                    d="M0,20 Q25,0 50,20 T100,20 T150,20"
+                                                    stroke-linecap="round"
+                                                    stroke={colorSelected}
+                                                    strokeWidth={colorSize}
+                                                    fill="transparent"
+                                                />
+                                            </svg>
+
+                                        </div>
+                                        <div className="flex gap-3 justify-center">
+                                            <motion.input step={2} min={4} max={20} className={`${inputRange ? "" : ""}`} onChange={(e) => setColorSize(e.currentTarget.value)} value={colorSize} type="range" name="" id="" />
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            </>
+                        )}
                     </div>
+                    <motion.div
+                        whileTap={{ scale: 0.9 }}
+                        whileHover={{ scale: 1.1, rotate: 1 }}
+                        className={`bg-primary dark:bg-slate-600 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer ${mode === 'erase' ? 'active' : ''}`}
+                        onClick={() => (toggleMode('erase'), setColorSelected('rgba(255, 255, 255, 1)'))}
+                    >
+                        <i className="pi pi-eraser" style={{ color: "white" }}></i>
+                    </motion.div>
+                </div>
+                <div>
                     <div className="flex gap-4 py-2">
                         <div className="flex gap-2">
                             <motion.div
@@ -355,11 +431,36 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber }: PDFEdi
                             </div>
                         </div>
                     </div>
-                </>
-            )
-                :
-                ("")
-            }
+                </div>
+                <div className="flex justify-center items-center gap-3">
+                    <button onClick={save}>save</button>
+                    <div className="flex justify-end w-full">
+                        <i className="pi pi-times cursor-pointer" style={{ color: "white" }} onClick={closeModal}></i>
+                    </div>
+                </div>
+            </div >
+            <div className="relative flex flex-col items-center justify-center bg-gray-300 dark:bg-gray-500 w-full h-full">
+                {file.url != null ? (
+                    <>
+                        <div className="relative flex justify-center items-center w-full h-full overflow-auto">
+                            <canvas ref={canvasRef} className="absolute z-10"></canvas>
+                            <canvas
+                                ref={drawingCanvasRef}
+                                className="absolute z-20"
+                                onMouseDown={startDrawing}
+                                onMouseMove={draw}
+                                onMouseUp={stopDrawing}
+                            />
+                        </div>
+                    </>
+                )
+                    :
+                    ("Visualização indisponível")
+                }
+            </div >
         </div >
     );
-};
+}
+
+
+
