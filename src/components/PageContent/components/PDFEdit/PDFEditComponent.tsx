@@ -232,13 +232,17 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         const pdfDoc = await PDFDocument.create();
         const originalPdfBytes = await fetch(file.url).then((res) => res.arrayBuffer());
         const originalPdf = await PDFDocument.load(originalPdfBytes);
-
-        const [originalPage] = await pdfDoc.copyPages(originalPdf, [parseInt(pageNumber!) - 1]);
-        pdfDoc.addPage(originalPage);
-
-        const page = pdfDoc.getPages()[0];
-        const { height } = originalPage.getSize();
-
+    
+        const totalPages = originalPdf.getPageCount();
+        const copiedPages = await pdfDoc.copyPages(originalPdf, Array.from({ length: totalPages }, (_, i) => i));
+    
+        copiedPages.forEach((page) => {
+            pdfDoc.addPage(page);
+        });
+    
+        const pageToEdit = pdfDoc.getPages()[parseInt(pageNumber!) - 1];
+        const { height } = pageToEdit.getSize();
+    
         const drawColor = (color: string) => {
             return rgb(
                 parseInt(color.slice(1, 3), 16) / 255,
@@ -246,13 +250,13 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 parseInt(color.slice(5, 7), 16) / 255
             );
         };
-
+    
         drawings.forEach((drawing) => {
             const startY = height - drawing.from.y;
             const endY = height - drawing.to.y;
-
+    
             if (drawing.type === 'line') {
-                page.drawLine({
+                pageToEdit.drawLine({
                     start: { x: drawing.from.x, y: startY },
                     end: { x: drawing.to.x, y: endY },
                     lineCap: LineCapStyle.Round,
@@ -261,7 +265,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     opacity: 1,
                 });
             } else if (drawing.type === 'erase') {
-                page.drawLine({
+                pageToEdit.drawLine({
                     start: { x: drawing.from.x, y: startY },
                     end: { x: drawing.to.x, y: endY },
                     lineCap: LineCapStyle.Round,
@@ -271,7 +275,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 });
             }
         });
-
+    
         const pdfBytes = await pdfDoc.save();
         const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
         const fileP = new File([pdfBlob], file.name);
@@ -287,13 +291,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             fileP.text.bind(fileP),
             fileP.arrayBuffer.bind(fileP)
         );
-
+    
         if (setFiles && files) {
             const newFiles = [...files];
             newFiles.splice(newFiles.indexOf(file), 1, newFileP);
             setFiles(newFiles);
         }
     }
+    
 
     const toggleMode = (newMode: 'draw' | 'erase' | 'view') => {
         setMode(newMode);
@@ -352,7 +357,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                                 key={index}
                                 onClick={() => (handlePageChange({ target: { value: index + 1 } } as any))}
                                 whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.3)' }}
-                            ><Image alt="preview" className="p-10" key={index} src={url} />
+                            ><Image width={300} height={300} alt="preview" className="p-10" key={index} src={url} />
                             </motion.div>
                         ))}
                     </motion.div>
