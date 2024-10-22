@@ -5,7 +5,7 @@ import { EnumerateComponent } from "@/components/PageContent/components/Enumerat
 
 export default function GroupPDF() {
     return (
-        <div className="flex items-center justify-center">
+        <div className="flex  w-full h-full items-center justify-center">
             <PageContentComponent func={<EnumerateComponent />} />
         </div>
     )
