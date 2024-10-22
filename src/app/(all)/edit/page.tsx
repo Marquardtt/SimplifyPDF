@@ -30,7 +30,9 @@ export default function EditPage() {
             </div>
             {file.length > 0 ? (
                 <div className="">
-                    <PDFEditComponent file={file[0]} pageNumber={1} />
+                    <PDFEditComponent file={file[0]} pageNumber={1} closeModal={function (a: any): void {
+                        throw new Error("Function not implemented.");
+                    } } />
                 </div>
             ) : (
                 <><span>nenhum arquivo carregado</span></>

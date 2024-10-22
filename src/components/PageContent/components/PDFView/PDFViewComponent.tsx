@@ -32,7 +32,6 @@ export const PDFView = ({ url }: PDFViewProps) => {
 
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-
         const renderContext = {
             canvasContext: context,
             viewport,

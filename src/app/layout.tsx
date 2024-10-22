@@ -32,7 +32,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                     </DndProvider>
                 </FilesContext.Provider>
             </body>
-                <footer className="bottom-0"><FooterComponent /></footer>
+                {/* <footer className="bottom-0"><FooterComponent /></footer> */}
         </html >
 
     )
