@@ -1,6 +1,7 @@
 "use client"
 
 import { FooterComponent } from "@/components/Footer";
+import { HeaderComponent } from "@/components/Header";
 import { FilesContext } from "@/contexts/FilesContext";
 import { PageContent } from "@/contexts/PageContentContext";
 import { FileP } from "@/models";
@@ -27,9 +28,17 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <body>
                 <FilesContext.Provider value={{ files, setFiles }}>
                     <DndProvider backend={HTML5Backend}>
-                        <PageContent>
-                            {children}
-                        </PageContent>
+                        <header>
+                            <HeaderComponent />
+                        </header>
+                        <main>
+                            <PageContent>
+                                {children}
+                            </PageContent>
+                        </main>
+                        <footer>
+                            <FooterComponent />
+                        </footer>
                     </DndProvider>
                 </FilesContext.Provider>
             </body>

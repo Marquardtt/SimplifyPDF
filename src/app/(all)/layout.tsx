@@ -10,14 +10,6 @@ type LayoutProps = {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <body
-      id="body"
-      className={` font-montserrat w-screen h-screen bg-white flex flex-col justify-between  dark:bg-slate-600 transition-all`}
-    >
-      <header><HeaderComponent /></header>
-      <div className="py-24">{children}</div>
-      <footer className="absolute top-[49vw] w-full"><FooterComponent /></footer>
-    </body>
-
+    <div className="font-montserrat w-screen h-screen bg-white flex flex-col justify-between  dark:bg-slate-600 transition-all py-24">{children}</div>
   );
 }

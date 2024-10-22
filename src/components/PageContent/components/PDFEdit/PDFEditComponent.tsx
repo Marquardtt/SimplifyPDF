@@ -9,7 +9,6 @@ import { FilesContext } from "@/contexts/FilesContext";
 import { ColorBallComponent } from "./components/ColorBallComponent";
 import { StrokeSVGComponent } from "./components/StrokeSVG";
 import { ButtonComponent } from "./components/ButtonComponent";
-import { PDFView } from "../PDFView";
 import Image from "next/image";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -41,17 +40,15 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
     useEffect(() => {
         const loadPDF = async () => {
-            const loadingTask = pdfjsLib.getDocument(file); // Passando o File diretamente
+            const loadingTask = pdfjsLib.getDocument(file);
             const loadedPDF = await loadingTask.promise;
             setPdf(loadedPDF);
 
-            // Gerar URLs para as miniaturas
             const urls: string[] = [];
             for (let i = 1; i <= loadedPDF.numPages; i++) {
                 const page = await loadedPDF.getPage(i);
                 const viewport = page.getViewport({ scale: 1.5 });
 
-                // Criar um canvas para renderizar a página
                 const canvas = document.createElement("canvas");
                 const context = canvas.getContext("2d");
 
@@ -68,7 +65,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 };
 
                 await page.render(renderContext).promise;
-                urls.push(canvas.toDataURL());  // Adiciona a imagem da miniatura
+                urls.push(canvas.toDataURL());
             }
             setPdfPagesUrls(urls);
         };
