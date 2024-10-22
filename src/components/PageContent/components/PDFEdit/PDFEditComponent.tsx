@@ -9,6 +9,7 @@ import { FilesContext } from "@/contexts/FilesContext";
 import { ColorBallComponent } from "./components/ColorBallComponent";
 import { StrokeSVGComponent } from "./components/StrokeSVG";
 import { ButtonComponent } from "./components/ButtonComponent";
+import { PDFView } from "../PDFView";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -18,7 +19,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
     const [pdf, setPdf] = useState<any>(null);
-    const [pageNumber, setPageNumber] = useState(initialPageNumber);
+    const [pdfPagesUrls, setPdfPagesUrls] = useState<string[]>([]);
+    const [pageNumber, setPageNumber] = useState<string | undefined>(initialPageNumber.toString());
     const [zoomLevel, setZoomLevel] = useState(1);
     const renderTaskRef = useRef<any>(null);
     const [colorSelected, setColorSelected] = useState("#FFFFFF");
@@ -27,18 +29,47 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const [isDrawing, setIsDrawing] = useState(false);
     const [mode, setMode] = useState<'draw' | 'erase' | 'view'>('view');
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-    const [inputRange, setInputRange] = useState(false);
     const { files, setFiles } = useContext(FilesContext);
     const [colorSize, setColorSize] = useState<number | string>(2);
     const [drawings, setDrawings] = useState<any[]>([]);
     const [tempDrawings, setTempDrawings] = useState<any[]>([]);
+    const [indexOpen, setIndexOpen] = useState(false);
     const presetColors = ["#7DDA58", "#D20103", "#000000", "#FFFFFF"]
+
+
 
     useEffect(() => {
         const loadPDF = async () => {
-            const loadingTask = pdfjsLib.getDocument(file.url);
+            const loadingTask = pdfjsLib.getDocument(file); // Passando o File diretamente
             const loadedPDF = await loadingTask.promise;
             setPdf(loadedPDF);
+
+            // Gerar URLs para as miniaturas
+            const urls: string[] = [];
+            for (let i = 1; i <= loadedPDF.numPages; i++) {
+                const page = await loadedPDF.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 });
+
+                // Criar um canvas para renderizar a página
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+
+                if (!context) {
+                    throw new Error("Não foi possível obter o contexto do canvas.");
+                }
+
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport,
+                };
+
+                await page.render(renderContext).promise;
+                urls.push(canvas.toDataURL());  // Adiciona a imagem da miniatura
+            }
+            setPdfPagesUrls(urls);
         };
         loadPDF();
     }, [file]);
@@ -81,14 +112,21 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
     useEffect(() => {
         if (pdf) {
-            renderPdf(pageNumber, zoomLevel);
+            renderPdf(parseInt(pageNumber!), zoomLevel);
         }
-    }, [pdf, pageNumber, zoomLevel]);
+    }, [pdf, zoomLevel]);
 
     const handlePageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newPage = parseInt(e.target.value);
+        const value = e.target.value
+        setDrawings([])
+        if (value === '') {
+            setPageNumber(undefined)
+            return
+        }
+        const newPage = parseInt(value);
         if (newPage > 0 && newPage <= pdf?.numPages) {
-            setPageNumber(newPage);
+            setPageNumber(newPage.toString());
+            renderPdf(newPage, zoomLevel);
         }
     };
 
@@ -197,7 +235,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         const originalPdfBytes = await fetch(file.url).then((res) => res.arrayBuffer());
         const originalPdf = await PDFDocument.load(originalPdfBytes);
 
-        const [originalPage] = await pdfDoc.copyPages(originalPdf, [pageNumber - 1]);
+        const [originalPage] = await pdfDoc.copyPages(originalPdf, [parseInt(pageNumber!) - 1]);
         pdfDoc.addPage(originalPage);
 
         const page = pdfDoc.getPages()[0];
@@ -283,7 +321,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     };
 
-
     useEffect(() => {
         const handle = setTimeout(() => {
             if (drawings.length > 1) {
@@ -303,19 +340,36 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     }, [drawings]);
 
     return (
-        <div className="md:w-[90vw] md:h-[50vw] lg:h-[94%] lg:w-1/1 bg-gray-400 dark:bg-slate-600 rounded-md flex flex-col items-center justify-end text-white">
-            <div className="flex items-center gap-4 my-2 w-full h-12 px-3 justify-between">
+        <div className="relative md:w-[90vw] md:h-[50vw] w-[90vw] h-full lg:h-[94%] lg:w-1/1 bg-gray-400 dark:bg-slate-600 rounded-md flex flex-col items-center justify-end text-white">
+            <motion.div
+                onMouseLeave={() => setIndexOpen(false)}
+                animate={{ width: indexOpen ? '20%' : '0%', opacity: indexOpen ? 1 : 0 }}
+                className="flex justify-center  absolute w-30 h-full bg-primary dark:bg-slate-600 z-50 left-0">
+                <div className="flex flex-col items-center my-10 px-5">
+                    <span className="pb-5">Sumário</span>
+                    <motion.div
+                        className="flex flex-col gap-3 items-center overflow-y-scroll h-full">
+                        {pdfPagesUrls.map((url, index) => (
+                            <motion.div
+                                onClick={() => (handlePageChange({ target: { value: index + 1 } } as any))}
+                                whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.3)' }}
+                            ><img className="p-10" key={index} src={url} />
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                </div>
+            </motion.div>
+            <div className="flex items-center gap-4 my-2 w-full h-12 px-3 justify-between relative">
                 <div className="flex gap-3">
-                    <div className="flex justify-center items-center w-9 h-9 rounded-full bg-primary">
-                        <i className="pi pi-book" style={{ color: "white" }}></i>
-                    </div>
+                    <ButtonComponent icon="pi-book" onClick={() => setIndexOpen(!indexOpen)} />
+
                     <div
                         className="relative"
                         onMouseOver={() => setColorPickerOpen(true)}
                         onMouseOut={() => setColorPickerOpen(false)}
                     >
                         <div
-                            className={`relative flex flex-col justify-center bg-primary dark:bg-slate-600 rounded-md  w-44 h-9  items-start z-40 `}>
+                            className={`relative flex flex-col justify-center bg-primary dark:bg-slate-500 rounded-md  w-44 h-9  items-start z-40 `}>
                             <div className="w-full flex items-center justify-between gap-3 px-3" onClick={() => toggleMode('draw')}>
                                 <div
                                     className="flex gap-2 items-center cursor-pointer">
@@ -340,7 +394,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                                     transition={{ duration: 0.2 }}
                                 >
                                     <div className="h-2 bg-transparent"></div>
-                                    <motion.div className="bg-primary w-full rounded-md py-2 flex flex-col gap-3">
+                                    <motion.div className="bg-primary dark:bg-gray-600 w-full rounded-md py-2 flex flex-col gap-3">
                                         <div className="flex gap-3 justify-center">
                                             {presetColors.map((c) => (
                                                 <ColorBallComponent key={c} onClick={() => (setColorSelected(c), setMode('draw'))} color={[c]} />
@@ -366,7 +420,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                                             <StrokeSVGComponent colorSelected={colorSelected} colorSize={colorSize as number} />
                                         </div>
                                         <div className="flex gap-3 justify-center">
-                                            <motion.input step={2} min={4} max={20} className={`${inputRange ? "" : ""}`} onChange={(e) => setColorSize(e.currentTarget.value)} value={colorSize} type="range" name="" id="" />
+                                            <motion.input step={2} min={4} max={20} onChange={(e) => setColorSize(e.currentTarget.value)} value={colorSize} type="range" name="" id="" />
                                         </div>
                                     </motion.div>
                                 </motion.div>
@@ -386,10 +440,9 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                         <div className="flex items-center gap-1">
                             <input
                                 type="number"
-                                value={pageNumber}
-                                onChange={handlePageChange}
+                                value={pageNumber || ''}
+                                onChange={(e) => handlePageChange(e)}
                                 className="border rounded px-2 text-black"
-                                max={pdf?.numPages}
                                 min={1}
                             />
                             <div>
