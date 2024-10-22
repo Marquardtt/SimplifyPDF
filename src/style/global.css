@@ -19,14 +19,18 @@ div::-webkit-scrollbar {
     display: none;
 }
 
+canvas::-webkit-scrollbar {
+    display: block;
+}
 
   input[type=number]::-webkit-inner-spin-button, 
   input[type=number]::-webkit-outer-spin-button { 
     -webkit-appearance: none;
   }
+
   input[type="number"]{
     outline:none;
-    width: 40px;
+    width: fit-content;
   }
 
 @font-face {

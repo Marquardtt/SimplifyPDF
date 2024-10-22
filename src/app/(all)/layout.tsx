@@ -16,7 +16,8 @@ export default function Layout({ children }: LayoutProps) {
     >
       <header><HeaderComponent /></header>
       <div className="py-24">{children}</div>
+      <footer className="absolute top-[49vw] w-full"><FooterComponent /></footer>
     </body>
-    
+
   );
 }

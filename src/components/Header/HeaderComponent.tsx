@@ -69,7 +69,7 @@ export function HeaderComponent() {
                             animate={{}}
                             onClick={() => (router.push('/merge'), setHover(false))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></motion.div>
                             <motion.div onClick={() => (router.push('/enumerate'), setHover(false))} className="gap-2  flex items-center text-sm cursor-pointer"><i className="pi pi-sort-numeric-up" style={{ fontSize: 15 }}></i><span className="">Numerar PDFs</span></motion.div>
-                            <motion.div onClick={() => (alert("Pagina ainda em desenvolvimento"))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-cog" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
+                            <motion.div onClick={() => (alert("Pagina ainda em desenvolvimento\n\nTente utilizar o editor da página de agrupar ou numerar PDFs, basta adicionar o PDF desejado e clicar nele para abrir a visualização detalhada!"))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-cog" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
                         </motion.div>
                     </motion.div>
                 </div>
