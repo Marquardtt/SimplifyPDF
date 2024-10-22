@@ -114,7 +114,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         if (pdf) {
             renderPdf(parseInt(pageNumber!), zoomLevel);
         }
-    }, [pdf, zoomLevel]);
+    }, [pdf, zoomLevel, pageNumber]);
 
     const handlePageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
