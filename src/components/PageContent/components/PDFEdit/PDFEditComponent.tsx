@@ -10,6 +10,7 @@ import { ColorBallComponent } from "./components/ColorBallComponent";
 import { StrokeSVGComponent } from "./components/StrokeSVG";
 import { ButtonComponent } from "./components/ButtonComponent";
 import { PDFView } from "../PDFView";
+import Image from "next/image";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -351,9 +352,10 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                         className="flex flex-col gap-3 items-center overflow-y-scroll h-full">
                         {pdfPagesUrls.map((url, index) => (
                             <motion.div
+                                key={index}
                                 onClick={() => (handlePageChange({ target: { value: index + 1 } } as any))}
                                 whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.3)' }}
-                            ><img className="p-10" key={index} src={url} />
+                            ><Image alt="preview" className="p-10" key={index} src={url} />
                             </motion.div>
                         ))}
                     </motion.div>
