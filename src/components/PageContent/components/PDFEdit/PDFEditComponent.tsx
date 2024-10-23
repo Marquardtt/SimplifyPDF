@@ -4,7 +4,7 @@ import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.entry";
 import { FileP } from "@/models";
 import { motion } from "framer-motion";
 import BrushIcon from '@mui/icons-material/Brush';
-import { rgb, PDFDocument, LineCapStyle } from "pdf-lib";
+import { rgb, PDFDocument, LineCapStyle, StandardFonts } from "pdf-lib";
 import { FilesContext } from "@/contexts/FilesContext";
 import { ColorBallComponent } from "./components/ColorBallComponent";
 import { StrokeSVGComponent } from "./components/StrokeSVG";
@@ -27,7 +27,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const [colorPickerOpen, setColorPickerOpen] = useState(false);
     const [colorPicker, setColorPicker] = useState("#FFFFFF");
     const [isDrawing, setIsDrawing] = useState(false);
-    const [mode, setMode] = useState<'draw' | 'erase' | 'view'>('view');
+    const [mode, setMode] = useState<'draw' | 'erase' | 'text'>('text');
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const { files, setFiles } = useContext(FilesContext);
     const [colorSize, setColorSize] = useState<number | string>(2);
@@ -35,8 +35,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const [tempDrawings, setTempDrawings] = useState<any[]>([]);
     const [indexOpen, setIndexOpen] = useState(false);
     const presetColors = ["#7DDA58", "#D20103", "#000000", "#FFFFFF"]
-
-
 
     useEffect(() => {
         const loadPDF = async () => {
@@ -172,6 +170,80 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         return Math.sqrt(dx * dx + dy * dy);
     };
 
+    const writeInPdf = async () => {
+        if (mode === 'text') {
+            const canvasDrawing = drawingCanvasRef.current;
+            const ctx = canvasDrawing?.getContext("2d");
+
+            if (!ctx) return;
+            if (!canvasDrawing) return;
+
+            const textArea = document.createElement("textarea");
+            textArea.style.position = 'absolute';
+
+            // Calcula a posição correta do textarea sem aplicar zoom
+            textArea.style.left = `${mousePos.x}px`; // Usa a posição do canvas
+            textArea.style.top = `${mousePos.y}px`; // Ajuste para a posição Y
+
+            textArea.style.border = 'none';
+            textArea.style.padding = '0';
+            textArea.style.margin = '0';
+            textArea.style.width = 'fit-content';
+            textArea.style.height = '25px';
+            textArea.style.zIndex = '1000';
+            textArea.style.background = 'transparent';
+            textArea.style.resize = 'none';
+
+            textArea.addEventListener('blur', function () {
+                const text = textArea.value;
+                ctx.font = '16px Arial';
+                ctx.fillStyle = 'black';
+
+                // Aplica zoom ao desenhar o texto
+                ctx.fillText(text, mousePos.x * zoomLevel, mousePos.y * zoomLevel);
+
+                setDrawings((prev) => [...prev, {
+                    type: 'text',
+                    color: colorSelected,
+                    x: mousePos.x * zoomLevel, // Posição do texto aplicada com zoom
+                    y: mousePos.y * zoomLevel,
+                    text,
+                }]);
+            });
+
+            document.body.appendChild(textArea);
+            textArea.focus();
+        }
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const textarea = document.querySelector('textarea');
+            if (mode === 'text' && textarea && !textarea.contains(e.target as Node)) {
+                toggleMode('draw');
+                textarea.remove();
+            }
+        };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const textarea = document.querySelector('textarea');
+            if (mode === 'text' && e.key === 'Enter' && textarea) {
+                toggleMode('draw');
+                textarea.remove();
+            }
+        };
+
+        window.addEventListener('mousedown', handleClickOutside);
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [mode]);
+
+
+
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDrawing || !drawingCanvasRef.current) return;
 
@@ -183,7 +255,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             y: (e.clientY - rect.top) / zoomLevel,
         };
 
-        if (mode === "draw") {
+        if (mode === "draw" || mode === "text") {
             const newDrawing = {
                 type: 'line',
                 color: colorSelected,
@@ -191,7 +263,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 from: { ...mousePos },
                 to: { ...newMousePos }
             };
-            setDrawings((prev) => [...prev, newDrawing]);
+            setDrawings([...drawings, newDrawing]);
         } else if (mode === "erase") {
             const eraseRadius = (colorSize as number) * 2;
             setDrawings((prev) => {
@@ -221,9 +293,12 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 context.lineWidth = drawing.lineWidth * zoomLevel;
                 context.strokeStyle = drawing.color;
                 context.lineCap = 'round';
-                context.moveTo(drawing.from.x * zoomLevel, drawing.from.y * zoomLevel);
-                context.lineTo(drawing.to.x * zoomLevel, drawing.to.y * zoomLevel);
-                context.stroke();
+
+                if (drawing.from && drawing.to) {
+                    context.moveTo(drawing.from.x * zoomLevel, drawing.from.y * zoomLevel);
+                    context.lineTo(drawing.to.x * zoomLevel, drawing.to.y * zoomLevel);
+                    context.stroke();
+                }
             });
         }
     };
@@ -232,17 +307,17 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         const pdfDoc = await PDFDocument.create();
         const originalPdfBytes = await fetch(file.url).then((res) => res.arrayBuffer());
         const originalPdf = await PDFDocument.load(originalPdfBytes);
-    
+
         const totalPages = originalPdf.getPageCount();
         const copiedPages = await pdfDoc.copyPages(originalPdf, Array.from({ length: totalPages }, (_, i) => i));
-    
+
         copiedPages.forEach((page) => {
             pdfDoc.addPage(page);
         });
-    
+
         const pageToEdit = pdfDoc.getPages()[parseInt(pageNumber!) - 1];
         const { height } = pageToEdit.getSize();
-    
+
         const drawColor = (color: string) => {
             return rgb(
                 parseInt(color.slice(1, 3), 16) / 255,
@@ -250,12 +325,12 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 parseInt(color.slice(5, 7), 16) / 255
             );
         };
-    
-        drawings.forEach((drawing) => {
-            const startY = height - drawing.from.y;
-            const endY = height - drawing.to.y;
-    
+
+        drawings.forEach(async (drawing) => {
+
             if (drawing.type === 'line') {
+                const startY = height - drawing.from.y;
+                const endY = height - drawing.to.y;
                 pageToEdit.drawLine({
                     start: { x: drawing.from.x, y: startY },
                     end: { x: drawing.to.x, y: endY },
@@ -265,6 +340,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     opacity: 1,
                 });
             } else if (drawing.type === 'erase') {
+                const startY = height - drawing.from.y;
+                const endY = height - drawing.to.y;
                 pageToEdit.drawLine({
                     start: { x: drawing.from.x, y: startY },
                     end: { x: drawing.to.x, y: endY },
@@ -273,9 +350,17 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     color: rgb(1, 1, 1),
                     opacity: 0.5,
                 });
+            } else if (drawing.type === 'text') {
+                pageToEdit.drawText(drawing.text, {
+                    x: drawing.x,
+                    y: height - drawing.y,
+                    size: 16,
+                    font: await pdfDoc.embedFont(StandardFonts.Helvetica),
+                    color: drawColor(drawing.color),
+                });
             }
         });
-    
+
         const pdfBytes = await pdfDoc.save();
         const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
         const fileP = new File([pdfBlob], file.name);
@@ -291,16 +376,23 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             fileP.text.bind(fileP),
             fileP.arrayBuffer.bind(fileP)
         );
-    
+
         if (setFiles && files) {
             const newFiles = [...files];
             newFiles.splice(newFiles.indexOf(file), 1, newFileP);
             setFiles(newFiles);
         }
     }
-    
 
-    const toggleMode = (newMode: 'draw' | 'erase' | 'view') => {
+
+    const toggleMode = (newMode: 'draw' | 'erase' | 'text') => {
+        if (newMode === 'text') {
+
+            document.body.style.cursor = 'text';
+            console.log(document.body.style.cursor);
+        } else {
+            document.body.style.cursor = 'default';
+        }
         setMode(newMode);
     };
 
@@ -401,7 +493,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                                     <motion.div className="bg-primary dark:bg-gray-600 w-full rounded-md py-2 flex flex-col gap-3">
                                         <div className="flex gap-3 justify-center">
                                             {presetColors.map((c) => (
-                                                <ColorBallComponent key={c} onClick={() => (setColorSelected(c), setMode('draw'))} color={[c]} />
+                                                <ColorBallComponent key={c} onClick={() => (setColorSelected(c), toggleMode('draw'))} color={[c]} />
                                             ))}
                                         </div>
                                         <div className="flex gap-3 justify-center">
@@ -411,7 +503,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                                                     id="colorPicker"
                                                     type="color"
                                                     whileTap={{ scale: 0.9 }}
-                                                    onChange={(e) => (setColorSelected(e.currentTarget.value), setColorPicker(e.currentTarget.value), setMode('draw'))}
+                                                    onChange={(e) => (setColorSelected(e.currentTarget.value), setColorPicker(e.currentTarget.value), toggleMode('draw'))}
                                                 >
                                                 </motion.input>
                                                 <label className="flex justify-center items-center" htmlFor="colorPicker">
@@ -440,6 +532,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                             <ButtonComponent icon="pi-refresh" onClick={() => handleRedo()} />
                             <ButtonComponent icon="pi-minus" onClick={() => zoomChange('out')} />
                             <ButtonComponent icon="pi-plus" onClick={() => zoomChange('in')} />
+                            <button onClick={() => toggleMode('text')} id="escrever"></button>
+                            <label htmlFor="escrever">:D</label>
                         </div>
                         <div className="flex items-center gap-1">
                             <input
@@ -464,10 +558,11 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 {file.url && (
                     <>
                         <div className="relative flex justify-center items-center w-full h-full overflow-auto">
-                            <canvas ref={canvasRef} className="absolute z-10"></canvas>
+                            <canvas ref={canvasRef} className="absolute z-10 w-fit h-fit"></canvas>
                             <canvas
                                 ref={drawingCanvasRef}
-                                className="absolute z-20"
+                                onClick={writeInPdf}
+                                className="absolute z-20 w-fit h-fit"
                                 onMouseDown={startDrawing}
                                 onMouseMove={draw}
                                 onMouseUp={() => setIsDrawing(false)}

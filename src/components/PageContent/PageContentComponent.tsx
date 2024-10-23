@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
-import { PDFDocument, StandardFonts } from "pdf-lib";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { PDFDocument } from "pdf-lib";
 import { AnimatePresence, motion } from "framer-motion";
 import { CardComponent } from "./components/PDFCard";
 import { PDFEditComponent } from "./components/PDFEdit";
@@ -20,7 +18,6 @@ export function PageContentComponent({ func }: PageContentProps) {
     const [selectedFile, setSelectedFile] = useState<number | null>(null);
     const [removeFiles, setRemoveFiles] = useState(false);
     const [pageNumber, setPageNumber] = useState<number>(0);
-
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (setFiles && files) {
