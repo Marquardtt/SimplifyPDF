@@ -30,7 +30,7 @@ canvas::-webkit-scrollbar {
 
   input[type="number"]{
     outline:none;
-    width: fit-content;
+    width: 50px;
   }
 
 @font-face {

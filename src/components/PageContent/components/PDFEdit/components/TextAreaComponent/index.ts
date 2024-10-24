@@ -1,0 +1,1 @@
+export {TextAreaComponent} from './TextArea'; 
