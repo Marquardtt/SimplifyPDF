@@ -434,8 +434,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 <div className="w-[2px] h-[80%] bg-gray-500"></div>
                 <div className="flex flex-col gap-3">
                     <div className="flex gap-3 h-16 items-center">
-                        <ButtonComponent children={<UndoIcon />} animate={{}} onClick={() => handleUndo()} />
-                        <ButtonComponent children={<RedoIcon />} onClick={() => handleRedo()} />
+                        <ButtonComponent animate={{}} onClick={() => handleUndo()}><UndoIcon /></ButtonComponent>
+                        <ButtonComponent onClick={() => handleRedo()} ><RedoIcon /></ButtonComponent>
                         <ButtonComponent icon="pi-minus" onClick={() => zoomChange('out')} />
                         <ButtonComponent icon="pi-plus" onClick={() => zoomChange('in')} />
                         <div className="flex items-center gap-1">
@@ -460,8 +460,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     <div className="flex gap-3 h-16 items-center">
                         <ButtonComponent icon="pi-pencil" onClick={() => toggleMode('draw')} />
                         <ButtonComponent icon="pi-eraser" onClick={() => (toggleMode('erase'), setColorSelected('rgba(255, 255, 255, 1)'))} />
-                        <ButtonComponent children={<TextFieldsIcon />} onClick={() => setMode('text')} />
-                        <ButtonComponent children={<PanToolAltIcon />} onClick={() => toggleMode('none')} />
+                        <ButtonComponent onClick={() => setMode('text')} ><TextFieldsIcon /></ButtonComponent>
+                        <ButtonComponent onClick={() => toggleMode('none')}><PanToolAltIcon /></ButtonComponent>
 
                     </div>
                     <div className="flex justify-center text-sm">
@@ -535,14 +535,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                             </select>
                         </div>
                         <div className="w-[2px] h-[2rem] bg-gray-500"></div>
-                        <ButtonComponent children={<FormatBoldIcon sx={{ color: "white" }} />} onClick={() => { }} />
-                        <ButtonComponent children={<FormatItalicIcon sx={{ color: "white" }} />} onClick={() => { }} />
-                        <ButtonComponent children={<FormatUnderlinedIcon sx={{ color: "white" }} />} onClick={() => { }} />
-                        <ButtonComponent children={<StrikethroughSIcon sx={{ color: "white" }} />} onClick={() => { }} />
+                        <ButtonComponent onClick={() => { }} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
+                        <ButtonComponent onClick={() => { }} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
+                        <ButtonComponent onClick={() => { }} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
+                        <ButtonComponent onClick={() => { }} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
                         <div className="w-[2px] h-[2rem] bg-gray-500"></div>
-                        <ButtonComponent icon="pi-align-left" onClick={() => { }} />
-                        <ButtonComponent icon="pi-align-center" onClick={() => { }} />
-                        <ButtonComponent icon="pi-align-right" onClick={() => { }} />
+                        <ButtonComponent icon="pi-align-left" onClick={() => { }}> </ButtonComponent>
+                        <ButtonComponent icon="pi-align-center" onClick={() => { }}> </ButtonComponent>
+                        <ButtonComponent icon="pi-align-right" onClick={() => { }}> </ButtonComponent>
                     </div>
                 </motion.div>
                 {file.url && (
