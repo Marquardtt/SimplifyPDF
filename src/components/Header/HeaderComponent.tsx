@@ -36,7 +36,7 @@ export function HeaderComponent() {
 
     return (
         <>
-            <div style={{ color: "white" }} className={`flex items-center justify-between text-xl px-5 w-full dark:bg-black bg-primary h-[6%] fixed left-0 top-0 z-20`}>
+            <div style={{ color: "white" }} className={`font-montserrat flex items-center justify-between text-xl px-5 w-full dark:bg-black bg-primary h-[6%] fixed left-0 top-0 z-20`}>
                 <span style={{ fontSize: 25 }} onClick={() => setHover(!hover)} className="cursor-pointer"><i className="pi pi-bars"></i></span>
                 <div className="w-fit">
                     <motion.span
@@ -48,7 +48,8 @@ export function HeaderComponent() {
             <motion.div
                 transition={{ type: "spring", stiffness: 300, damping: 30, duration: 0.5 }}
                 animate={{ width: hover ? "220px" : "" }}
-                className="overflow-hidden text-white font-montserrat fixed h-full bg-primary dark:bg-black z-10"
+                className="font-montserrat overflow-hidden text-white fixed h-full bg-primary dark:bg-black z-10"
+                
             >
                 <div className="px-5 flex gap-4 justify-around absolute top-20">
                     <div>

@@ -4,39 +4,52 @@ import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.entry";
 import { FileP } from "@/models";
 import { motion } from "framer-motion";
 import BrushIcon from '@mui/icons-material/Brush';
-import { rgb, PDFDocument, LineCapStyle } from "pdf-lib";
+import { rgb, PDFDocument, LineCapStyle, StandardFonts } from "pdf-lib";
 import { FilesContext } from "@/contexts/FilesContext";
 import { ColorBallComponent } from "./components/ColorBallComponent";
 import { StrokeSVGComponent } from "./components/StrokeSVG";
 import { ButtonComponent } from "./components/ButtonComponent";
 import Image from "next/image";
+import { TextAreaComponent } from "./components/TextAreaComponent";
+
+import TextFieldsIcon from '@mui/icons-material/TextFields';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
+import FormatBoldIcon from '@mui/icons-material/FormatBold';
+import FormatItalicIcon from '@mui/icons-material/FormatItalic';
+import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
+import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
+import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 interface PDFEditProps { file: FileP; pageNumber: number; closeModal: (a: any) => void; }
 
 export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeModal }: PDFEditProps) => {
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
+    const canvasBounds = drawingCanvasRef.current?.getBoundingClientRect();
     const [pdf, setPdf] = useState<any>(null);
     const [pdfPagesUrls, setPdfPagesUrls] = useState<string[]>([]);
     const [pageNumber, setPageNumber] = useState<string | undefined>(initialPageNumber.toString());
     const [zoomLevel, setZoomLevel] = useState(1);
     const renderTaskRef = useRef<any>(null);
     const [colorSelected, setColorSelected] = useState("#FFFFFF");
-    const [colorPickerOpen, setColorPickerOpen] = useState(false);
     const [colorPicker, setColorPicker] = useState("#FFFFFF");
     const [isDrawing, setIsDrawing] = useState(false);
-    const [mode, setMode] = useState<'draw' | 'erase' | 'view'>('view');
+    const [mode, setMode] = useState<'draw' | 'erase' | 'text' | 'none'>('none');
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const { files, setFiles } = useContext(FilesContext);
     const [colorSize, setColorSize] = useState<number | string>(2);
     const [drawings, setDrawings] = useState<any[]>([]);
     const [tempDrawings, setTempDrawings] = useState<any[]>([]);
     const [indexOpen, setIndexOpen] = useState(false);
-    const presetColors = ["#7DDA58", "#D20103", "#000000", "#FFFFFF"]
-
-
+    const presetColors = ["#000000", "#7F7F7F", "#880015", "#D20103", "#FF7F27", "#FFF200", "#22B14C", "#00A2E8", "#FFFFFF", "#C3C3C3", "#B97A57", "#FFAEC9", "#FFC90E", "#B5E61D", "#99D9EA", "#C8BFE7"]
+    const [textAreaPos, setTextAreaPos] = useState({ x: 0, y: 0 });
+    const [textAreaVisible, setTextAreaVisible] = useState(false);
+    const [fontSize, setFontSize] = useState(12);
+    const [inCanvas, setInCanvas] = useState(false);
 
     useEffect(() => {
         const loadPDF = async () => {
@@ -53,7 +66,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 const context = canvas.getContext("2d");
 
                 if (!context) {
-                    throw new Error("Não foi possível obter o contexto do canvas.");
+                    throw new Error("Erro");
                 }
 
                 canvas.height = viewport.height;
@@ -172,6 +185,33 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         return Math.sqrt(dx * dx + dy * dy);
     };
 
+    const writeInPdf = async () => {
+        if (mode === 'text') {
+            setTextAreaPos({ x: mousePos.x, y: mousePos.y });
+            setTextAreaVisible(true);
+        }
+    };
+
+    const handleTextSubmit = (text: string) => {
+        const canvasDrawing = drawingCanvasRef.current;
+        const ctx = canvasDrawing?.getContext("2d");
+
+        if (ctx) {
+            ctx.font = fontSize + "px Arial";
+            ctx.fillStyle = colorSelected;
+            ctx.fillText(text, mousePos.x * zoomLevel, mousePos.y * zoomLevel);
+
+            setDrawings((prev) => [...prev, {
+                type: 'text',
+                color: colorSelected,
+                x: mousePos.x * zoomLevel,
+                y: mousePos.y * zoomLevel,
+                text,
+            }]);
+        }
+        setTextAreaVisible(false);
+    }
+
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDrawing || !drawingCanvasRef.current) return;
 
@@ -183,7 +223,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             y: (e.clientY - rect.top) / zoomLevel,
         };
 
-        if (mode === "draw") {
+        if (mode === "draw" || mode === "text") {
             const newDrawing = {
                 type: 'line',
                 color: colorSelected,
@@ -191,7 +231,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 from: { ...mousePos },
                 to: { ...newMousePos }
             };
-            setDrawings((prev) => [...prev, newDrawing]);
+            setDrawings([...drawings, newDrawing]);
         } else if (mode === "erase") {
             const eraseRadius = (colorSize as number) * 2;
             setDrawings((prev) => {
@@ -200,6 +240,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                         const distFromStart = distanceToLine(drawing.from, drawing.to, newMousePos);
                         return distFromStart > eraseRadius;
                     }
+                    else if (drawing.type === 'text') {
+                        const textWidth = drawing.text.length * 8;
+                        const textHeight = 16;
+                        const textToDelete = newMousePos.x > drawing.x && newMousePos.x < drawing.x + textWidth &&
+                            newMousePos.y > drawing.y - textHeight && newMousePos.y < drawing.y;
+                        setDrawings(prev => prev.filter(d => !(d === drawing && textToDelete)));
+                    }
+
                     return true;
                 });
             });
@@ -217,13 +265,19 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         if (context) {
             context.clearRect(0, 0, canvasDrawing.width, canvasDrawing.height);
             drawings.forEach((drawing) => {
-                context.beginPath();
-                context.lineWidth = drawing.lineWidth * zoomLevel;
-                context.strokeStyle = drawing.color;
-                context.lineCap = 'round';
-                context.moveTo(drawing.from.x * zoomLevel, drawing.from.y * zoomLevel);
-                context.lineTo(drawing.to.x * zoomLevel, drawing.to.y * zoomLevel);
-                context.stroke();
+                if (drawing.type === 'line') {
+                    context.beginPath();
+                    context.lineWidth = drawing.lineWidth * zoomLevel;
+                    context.strokeStyle = drawing.color;
+                    context.lineCap = 'round';
+                    context.moveTo(drawing.from.x * zoomLevel, drawing.from.y * zoomLevel);
+                    context.lineTo(drawing.to.x * zoomLevel, drawing.to.y * zoomLevel);
+                    context.stroke();
+                } else if (drawing.type === 'text') {
+                    context.font = 16 * zoomLevel + 'px Arial';
+                    context.fillStyle = drawing.color;
+                    context.fillText(drawing.text, drawing.x * zoomLevel, drawing.y * zoomLevel);
+                }
             });
         }
     };
@@ -232,17 +286,17 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         const pdfDoc = await PDFDocument.create();
         const originalPdfBytes = await fetch(file.url).then((res) => res.arrayBuffer());
         const originalPdf = await PDFDocument.load(originalPdfBytes);
-    
+
         const totalPages = originalPdf.getPageCount();
         const copiedPages = await pdfDoc.copyPages(originalPdf, Array.from({ length: totalPages }, (_, i) => i));
-    
+
         copiedPages.forEach((page) => {
             pdfDoc.addPage(page);
         });
-    
+
         const pageToEdit = pdfDoc.getPages()[parseInt(pageNumber!) - 1];
         const { height } = pageToEdit.getSize();
-    
+
         const drawColor = (color: string) => {
             return rgb(
                 parseInt(color.slice(1, 3), 16) / 255,
@@ -250,12 +304,12 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 parseInt(color.slice(5, 7), 16) / 255
             );
         };
-    
-        drawings.forEach((drawing) => {
-            const startY = height - drawing.from.y;
-            const endY = height - drawing.to.y;
-    
+
+        drawings.forEach(async (drawing) => {
+
             if (drawing.type === 'line') {
+                const startY = height - drawing.from.y;
+                const endY = height - drawing.to.y;
                 pageToEdit.drawLine({
                     start: { x: drawing.from.x, y: startY },
                     end: { x: drawing.to.x, y: endY },
@@ -264,18 +318,16 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     thickness: Number(drawing.lineWidth),
                     opacity: 1,
                 });
-            } else if (drawing.type === 'erase') {
-                pageToEdit.drawLine({
-                    start: { x: drawing.from.x, y: startY },
-                    end: { x: drawing.to.x, y: endY },
-                    lineCap: LineCapStyle.Round,
-                    thickness: Number(drawing.lineWidth),
-                    color: rgb(1, 1, 1),
-                    opacity: 0.5,
+            } else if (drawing.type === 'text') {
+                pageToEdit.drawText(drawing.text, {
+                    x: drawing.x,
+                    y: height - drawing.y,
+                    size: 16,
+                    color: drawColor(drawing.color),
                 });
             }
         });
-    
+
         const pdfBytes = await pdfDoc.save();
         const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
         const fileP = new File([pdfBlob], file.name);
@@ -291,18 +343,26 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             fileP.text.bind(fileP),
             fileP.arrayBuffer.bind(fileP)
         );
-    
+
         if (setFiles && files) {
             const newFiles = [...files];
             newFiles.splice(newFiles.indexOf(file), 1, newFileP);
             setFiles(newFiles);
         }
     }
-    
 
-    const toggleMode = (newMode: 'draw' | 'erase' | 'view') => {
+    const toggleMode = (newMode: 'draw' | 'erase' | 'none') => {
         setMode(newMode);
     };
+
+    useEffect(() => {
+        if (mode === 'text' && inCanvas) {
+            document.body.style.cursor = 'text';
+            console.log(document.body.style.cursor);
+        } else {
+            document.body.style.cursor = 'default';
+        }
+    }, [mode, inCanvas])
 
     const handleUndo = () => {
         if (drawings.length > 0) {
@@ -363,84 +423,21 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     </motion.div>
                 </div>
             </motion.div>
-            <div className="flex items-center gap-4 my-2 w-full h-12 px-3 justify-between relative">
-                <div className="flex gap-3">
-                    <ButtonComponent icon="pi-book" onClick={() => setIndexOpen(!indexOpen)} />
 
-                    <div
-                        className="relative"
-                        onMouseOver={() => setColorPickerOpen(true)}
-                        onMouseOut={() => setColorPickerOpen(false)}
-                    >
-                        <div
-                            className={`relative flex flex-col justify-center bg-primary dark:bg-slate-500 rounded-md  w-44 h-9  items-start z-40 `}>
-                            <div className="w-full flex items-center justify-between gap-3 px-3" onClick={() => toggleMode('draw')}>
-                                <div
-                                    className="flex gap-2 items-center cursor-pointer">
-                                    <i className="pi pi-pencil" style={{ color: "white" }}></i>
-                                    <span>Desenhar</span>
-                                </div>
-                                <div className="flex items-center">
-                                    <motion.i
-                                        className="w-fit h-fit pi pi-angle-up"
-                                        animate={{ rotate: colorPickerOpen ? 180 : 0 }}>
-                                    </motion.i>
-                                </div>
-                            </div>
-                        </div>
-                        {colorPickerOpen && (
-                            <>
-                                <motion.div
-                                    className="absolute w-full z-40"
-                                    initial={{ y: -20, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    exit={{ y: -20, opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <div className="h-2 bg-transparent"></div>
-                                    <motion.div className="bg-primary dark:bg-gray-600 w-full rounded-md py-2 flex flex-col gap-3">
-                                        <div className="flex gap-3 justify-center">
-                                            {presetColors.map((c) => (
-                                                <ColorBallComponent key={c} onClick={() => (setColorSelected(c), setMode('draw'))} color={[c]} />
-                                            ))}
-                                        </div>
-                                        <div className="flex gap-3 justify-center">
-                                            <div className="bg-white w-7 h-7 rounded-full relative">
-                                                <motion.input
-                                                    style={{ position: "absolute", opacity: 0 }}
-                                                    id="colorPicker"
-                                                    type="color"
-                                                    whileTap={{ scale: 0.9 }}
-                                                    onChange={(e) => (setColorSelected(e.currentTarget.value), setColorPicker(e.currentTarget.value), setMode('draw'))}
-                                                >
-                                                </motion.input>
-                                                <label className="flex justify-center items-center" htmlFor="colorPicker">
-                                                    <BrushIcon sx={{ color: colorPicker, fontSize: 20 }}></BrushIcon>
-                                                </label>
-                                            </div>
-
-                                        </div>
-                                        <div className="flex gap-3 justify-center">
-                                            <StrokeSVGComponent colorSelected={colorSelected} colorSize={colorSize as number} />
-                                        </div>
-                                        <div className="flex gap-3 justify-center">
-                                            <motion.input step={2} min={4} max={20} onChange={(e) => setColorSize(e.currentTarget.value)} value={colorSize} type="range" name="" id="" />
-                                        </div>
-                                    </motion.div>
-                                </motion.div>
-                            </>
-                        )}
+            <div className="flex items-start gap-4 my-3 w-full px-5 relative">
+                <div className="flex flex-col gap-3 ">
+                    <div className="flex items-center justify-center h-16">
+                        <ButtonComponent icon="pi-book" onClick={() => setIndexOpen(!indexOpen)} />
                     </div>
-                    <ButtonComponent icon="pi-eraser" onClick={() => (toggleMode('erase'), setColorSelected('rgba(255, 255, 255, 1)'))} />
+                    <div className="flex justify-center text-sm"><span>Sumário</span></div>
                 </div>
-                <div>
-                    <div className="flex gap-4 py-2 mr-44">
-                        <div className="flex gap-2">
-                            <ButtonComponent icon="pi-replay" animate={{}} onClick={() => handleUndo()} />
-                            <ButtonComponent icon="pi-refresh" onClick={() => handleRedo()} />
-                            <ButtonComponent icon="pi-minus" onClick={() => zoomChange('out')} />
-                            <ButtonComponent icon="pi-plus" onClick={() => zoomChange('in')} />
-                        </div>
+                <div className="w-[2px] h-[80%] bg-gray-500"></div>
+                <div className="flex flex-col gap-3">
+                    <div className="flex gap-3 h-16 items-center">
+                        <ButtonComponent animate={{}} onClick={() => handleUndo()}><UndoIcon /></ButtonComponent>
+                        <ButtonComponent onClick={() => handleRedo()} ><RedoIcon /></ButtonComponent>
+                        <ButtonComponent icon="pi-minus" onClick={() => zoomChange('out')} />
+                        <ButtonComponent icon="pi-plus" onClick={() => zoomChange('in')} />
                         <div className="flex items-center gap-1">
                             <input
                                 type="number"
@@ -454,26 +451,117 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                             </div>
                         </div>
                     </div>
+                    <div className="flex justify-center text-sm">
+                        <span>Controles de página</span>
+                    </div>
                 </div>
-                <div className="flex justify-center items-center gap-2">
+                <div className="w-[2px] h-[80%] bg-gray-500"></div>
+                <div className="flex flex-col gap-3 ">
+                    <div className="flex gap-3 h-16 items-center">
+                        <ButtonComponent icon="pi-pencil" onClick={() => toggleMode('draw')} />
+                        <ButtonComponent icon="pi-eraser" onClick={() => (toggleMode('erase'), setColorSelected('rgba(255, 255, 255, 1)'))} />
+                        <ButtonComponent onClick={() => setMode('text')} ><TextFieldsIcon /></ButtonComponent>
+                        <ButtonComponent onClick={() => toggleMode('none')}><PanToolAltIcon /></ButtonComponent>
+
+                    </div>
+                    <div className="flex justify-center text-sm">
+                        <span>Ferramentas</span>
+                    </div>
+                </div>
+                <div className="w-[2px] h-[80%] bg-gray-500"></div>
+                <div className="flex flex-col gap-3">
+                    <div className="flex w-full gap-3">
+                        <div className=" w-full rounded-md h-16 flex gap-3 items-center">
+                            <div className="grid grid-rows-2 grid-cols-8 gap-3">
+                                {presetColors.map((c) => (
+                                    <ColorBallComponent key={c} onClick={() => (setColorSelected(c), toggleMode('draw'))} color={[c]} />
+                                ))}
+                            </div>
+                            <div className="relative w-7 h-7 rounded-full flex justify-center">
+                                <div className="color-wheel absolute w-7 h-7 rounded-full" style={{
+                                    background: 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)',
+                                }}></div>
+                                <motion.input
+                                    style={{ position: "absolute", opacity: 0, width: '100%', height: '100%' }}
+                                    id="colorPicker"
+                                    type="color"
+                                    whileTap={{ scale: 0.9 }}
+                                    onChange={(e) => {
+                                        setColorSelected(e.currentTarget.value);
+                                        setColorPicker(e.currentTarget.value);
+                                        toggleMode('draw');
+                                    }}
+                                />
+                                <label className="flex justify-center items-center" htmlFor="colorPicker"></label>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div className="col-span-2 flex justify-center text-sm h-fit">
+                        <span>Cores</span>
+                    </div>
+                </div>
+                <div className="w-[2px] h-[80%] bg-gray-500"></div>
+                <div className="flex flex-col gap-3">
+                    <div className="flex flex-col items-center h-16">
+                        <StrokeSVGComponent colorSelected={colorSelected} colorSize={colorSize as number} />
+                        <motion.input step={2} min={4} max={20} onChange={(e) => setColorSize(e.currentTarget.value)} value={colorSize} type="range" name="" id="" />
+                    </div>
+                    <div className="text-sm flex justify-center"><span>Tamanho</span></div>
+                </div>
+                <div className="absolute right-0  px-3 flex justify-center items-center gap-2">
                     <ButtonComponent icon="pi-check" onClick={() => saveDef()} />
                     <ButtonComponent icon="pi-times" onClick={() => closeModal(false)} color={'#E00B0B'} />
                 </div>
             </div >
-            <div className="relative flex flex-col items-center justify-center bg-gray-300 dark:bg-gray-500 w-full h-full">
-                {file.url && (
-                    <>
-                        <div className="relative flex justify-center items-center w-full h-full overflow-auto">
-                            <canvas ref={canvasRef} className="absolute z-10"></canvas>
-                            <canvas
-                                ref={drawingCanvasRef}
-                                className="absolute z-20"
-                                onMouseDown={startDrawing}
-                                onMouseMove={draw}
-                                onMouseUp={() => setIsDrawing(false)}
-                            />
+
+
+            <div className="relative bg-gray-300 dark:bg-gray-500 w-full h-full">
+                <motion.div
+                    animate={{ height: mode === 'text' ? '55px' : '0px', opacity: mode === 'text' ? 1 : 0 }}
+                    className=" z-[1000] top-0 absolute w-[38%] text-black overflow-hidden ">
+                    <div className="bg-primary dark:bg-slate-600 w-full h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
+
+                        <div>
+                            <select className="outline-none rounded-md" id="fontFamily">
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                            </select>
                         </div>
-                    </>
+                        <div>
+                            <select className="outline-none rounded-md" id="fontSize" onChange={(e) => (setFontSize(parseInt(e.target.value)))}>
+                                <option value="11">11</option>
+                                <option value="15">15</option>
+                            </select>
+                        </div>
+                        <div className="w-[2px] h-[2rem] bg-gray-500"></div>
+                        <ButtonComponent onClick={() => { }} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
+                        <ButtonComponent onClick={() => { }} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
+                        <ButtonComponent onClick={() => { }} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
+                        <ButtonComponent onClick={() => { }} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
+                        <div className="w-[2px] h-[2rem] bg-gray-500"></div>
+                        <ButtonComponent icon="pi-align-left" onClick={() => { }}> </ButtonComponent>
+                        <ButtonComponent icon="pi-align-center" onClick={() => { }}> </ButtonComponent>
+                        <ButtonComponent icon="pi-align-right" onClick={() => { }}> </ButtonComponent>
+                    </div>
+                </motion.div>
+                {file.url && (
+                    <div className="relative w-full h-full  overflow-hidden flex ">
+                        <canvas ref={canvasRef} className="absolute z-10 " />
+                        <canvas
+                            onMouseOver={() => setInCanvas(true)}
+                            onMouseOut={() => setInCanvas(false)}
+                            ref={drawingCanvasRef}
+                            onClick={writeInPdf}
+                            className="absolute z-20 w-fit h-fit"
+                            onMouseDown={startDrawing}
+                            onMouseMove={draw}
+                            onMouseUp={() => setIsDrawing(false)}
+                        />
+                        {textAreaVisible && (
+                            <TextAreaComponent fontsize={fontSize} fontColor={colorSelected} x={textAreaPos.x} y={textAreaPos.y} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
+                        )}
+                    </div>
                 )}
             </div >
         </div >

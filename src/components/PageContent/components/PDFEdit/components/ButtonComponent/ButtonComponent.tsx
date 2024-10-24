@@ -3,21 +3,25 @@ import { AnimationControls, TargetAndTransition, VariantLabels } from "framer-mo
 
 interface ButtonProps {
     onClick: () => void;
-    icon: string;
+    children?: React.ReactNode;
+    icon?: string;
     color?: string;
     animate?: boolean | VariantLabels | AnimationControls | TargetAndTransition;
+    title?: string
 }
 
-export const ButtonComponent = ({ onClick, icon, color, animate}: ButtonProps) => {
+export const ButtonComponent = ({ onClick, icon, color, animate, children, title }: ButtonProps) => {
     return (
         <motion.div
+            title={title}
             animate={animate}
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1, rotate: 1 }}
-            className={`bg-primary dark:bg-slate-500 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer ${color !=null ? `bg-[#E00B0B]` : "bg-primary"}`}
+            className={`bg-primary dark:bg-slate-500 w-9 h-9 rounded-full flex justify-center items-center cursor-pointer ${color != null ? `bg-[#E00B0B]` : "bg-primary"}`}
             onClick={() => onClick()}
         >
-            <i className={`pi ${icon}`} style={{ color: "white" }}></i>
+            {children != null ? children : <i className={`pi ${icon}`} style={{ color: "white" }}></i>}
+
         </motion.div>
     )
 }
