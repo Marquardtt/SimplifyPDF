@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Draggable from 'react-draggable';
 
 interface TextAreaComponentProps {
     x: number;
@@ -7,26 +8,33 @@ interface TextAreaComponentProps {
     onTextSubmit: (text: string) => void;
     fontsize?: number;
     fontColor?: string;
+    onclick?: () => void;
+    editableText?: string;
 }
 
-export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ x, y, zoomLevel, onTextSubmit, fontsize, fontColor }) => {
+export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ x, y, zoomLevel, onTextSubmit, fontsize, fontColor, onclick, editableText}) => {
+    const [isFocused, setIsFocused] = useState(true); 
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleBlur = () => {
-        if (textAreaRef.current) {
-            onTextSubmit(textAreaRef.current.value);
-        }
+        setIsFocused(false);
+        onTextSubmit(textAreaRef.current?.value || '');
+    };
+
+    const handleFocus = () => {
+        setIsFocused(true);
     };
 
     useEffect(() => {
-        if (textAreaRef.current) {
+        if (textAreaRef.current && isFocused) {
             textAreaRef.current.focus();
         }
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Enter' && !e.shiftKey && textAreaRef.current) {
-                e.preventDefault()
-                onTextSubmit(textAreaRef.current.value);
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                onTextSubmit(textAreaRef.current!.value);
+                setIsFocused(false);
             }
         };
 
@@ -34,21 +42,30 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ x, y, zoom
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [onTextSubmit]);
+    }, [onTextSubmit, isFocused]);
+
+    useEffect(() => {
+        if (textAreaRef.current && isFocused) {
+            textAreaRef.current.value = editableText || ""; 
+            textAreaRef.current.focus();
+        }
+    }, [editableText, isFocused]);
 
     return (
-
-        <textarea
-            style={{
-                color: fontColor,
-                fontSize: fontsize+'px',
-                left: `${x * zoomLevel}px`,
-                top: `${y * zoomLevel}px`,
-            }}
-            className='absolute overflow-hidden z-20 border-2 border-dashed  p-0 m-0 w-60 h-auto bg-transparent outline-none resize-none rounded-md'
-            ref={textAreaRef}
-            onBlur={handleBlur}
-            placeholder='Escreva aqui...'
-        />
+        <Draggable defaultPosition={{ x: x * zoomLevel, y: y * zoomLevel }}>
+            <textarea
+                onClick={onclick}
+                style={{
+                    color: fontColor,
+                    fontSize: fontsize + 'px',
+                    border: isFocused ? '2px dashed gray' : 'none',
+                }}
+                className='absolute overflow-hidden z-20 bg-transparent outline-none resize-none rounded-md'
+                ref={textAreaRef}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                placeholder='Escreva aqui...'
+            />
+        </Draggable>
     );
 };

@@ -28,21 +28,20 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <body>
                 <FilesContext.Provider value={{ files, setFiles }}>
                     <DndProvider backend={HTML5Backend}>
-                        <header>
+                        <header id="header">
                             <HeaderComponent />
                         </header>
-                        <main>
+                        <main id="main">
                             <PageContent>
                                 {children}
                             </PageContent>
                         </main>
-                        <footer>
+                        <footer id="footer">
                             <FooterComponent />
                         </footer>
                     </DndProvider>
                 </FilesContext.Provider>
             </body>
         </html >
-
     )
 }

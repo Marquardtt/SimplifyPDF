@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import 'primeicons/primeicons.css';
 
 export function HeaderComponent() {
@@ -10,6 +10,7 @@ export function HeaderComponent() {
     const [hover, setHover] = useState<boolean>(false);
     const [show, setShow] = useState<boolean>(false);
     const router = useRouter();
+    const sideBarRef = useRef<HTMLDivElement>(null);
 
     const handleTheme = () => {
         const htmlElement = document.documentElement;
@@ -22,7 +23,7 @@ export function HeaderComponent() {
             setTheme('dark');
             localStorage.setItem('theme', 'dark');
         }
-    }
+    };
 
     useEffect(() => {
         if (localStorage.getItem('theme') === 'dark') {
@@ -32,10 +33,23 @@ export function HeaderComponent() {
             document.documentElement.classList.remove('dark');
             setTheme('light');
         }
-    }, [])
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (sideBarRef.current && !sideBarRef.current.contains(e.target as Node)) {
+                setHover(false);
+            }
+        };
+
+        window.addEventListener('click', handleClickOutside);
+        return () => {
+            window.removeEventListener('click', handleClickOutside);
+        };
+    }, []);
 
     return (
-        <>
+        <div ref={sideBarRef}>
             <div style={{ color: "white" }} className={`font-montserrat flex items-center justify-between text-xl px-5 w-full dark:bg-black bg-primary h-[6%] fixed left-0 top-0 z-20`}>
                 <span style={{ fontSize: 25 }} onClick={() => setHover(!hover)} className="cursor-pointer"><i className="pi pi-bars"></i></span>
                 <div className="w-fit">
@@ -49,7 +63,6 @@ export function HeaderComponent() {
                 transition={{ type: "spring", stiffness: 300, damping: 30, duration: 0.5 }}
                 animate={{ width: hover ? "220px" : "" }}
                 className="font-montserrat overflow-hidden text-white fixed h-full bg-primary dark:bg-black z-10"
-                
             >
                 <div className="px-5 flex gap-4 justify-around absolute top-20">
                     <div>
@@ -57,18 +70,18 @@ export function HeaderComponent() {
                     </div>
                     <motion.div
                         animate={{ opacity: hover ? "100%" : "0%", display: hover ? "" : "none" }}
-                        className="flex flex-col justify-center gap-4 ">
+                        className="flex flex-col justify-center gap-4 pb-2">
                         <div onClick={() => setShow(!show)} className="flex  gap-5 items-center  cursor-pointer">
-                            <span className="w-fit h-fit">Ferramentas</span>
+                            <span className="w-fit h-fit ">Ferramentas</span>
                             <motion.i
                                 className="w-fit h-fit pi pi-angle-up"
                                 animate={{ rotate: show ? 0 : -180 }}>
                             </motion.i>
                         </div>
-                        <motion.div className={`flex flex-col gap-3 w-full ${hover && show ? "block" : "none"}`} animate={{ opacity: show ? "100%" : "0%" }}>
-                            <motion.div 
-                            animate={{}}
-                            onClick={() => (router.push('/merge'), setHover(false))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></motion.div>
+                        <motion.div className={`flex flex-col gap-3 w-full  ${hover && show ? "block" : "none"}`} animate={{ opacity: show ? "100%" : "0%", display: show ? "" : "none" }}>
+                            <motion.div
+                                animate={{}}
+                                onClick={() => (router.push('/merge'), setHover(false))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></motion.div>
                             <motion.div onClick={() => (router.push('/enumerate'), setHover(false))} className="gap-2  flex items-center text-sm cursor-pointer"><i className="pi pi-sort-numeric-up" style={{ fontSize: 15 }}></i><span className="">Numerar PDFs</span></motion.div>
                             <motion.div onClick={() => (alert("Pagina ainda em desenvolvimento\n\nTente utilizar o editor da página de agrupar ou numerar PDFs, basta adicionar o PDF desejado e clicar nele para abrir a visualização detalhada!"))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-cog" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
                         </motion.div>
@@ -88,6 +101,6 @@ export function HeaderComponent() {
                     </motion.div>
                 </div>
             </motion.div>
-        </>
-    )
+        </div>
+    );
 }
