@@ -20,6 +20,7 @@ import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
+import { url } from "inspector";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -29,7 +30,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
-    const canvasBounds = drawingCanvasRef.current?.getBoundingClientRect();
     const [pdf, setPdf] = useState<any>(null);
     const [pdfPagesUrls, setPdfPagesUrls] = useState<string[]>([]);
     const [pageNumber, setPageNumber] = useState<string | undefined>(initialPageNumber.toString());
@@ -50,6 +50,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const [textAreaVisible, setTextAreaVisible] = useState(false);
     const [fontSize, setFontSize] = useState(12);
     const [inCanvas, setInCanvas] = useState(false);
+    const [editableText, setEditableText] = useState<string>("");
+
 
     useEffect(() => {
         const loadPDF = async () => {
@@ -186,31 +188,80 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     };
 
     const writeInPdf = async () => {
-        if (mode === 'text') {
+        const drawingClicked = getTextClicked();
+        if (drawingClicked) {
+            setTextAreaPos({ x: drawingClicked.x / zoomLevel, y: drawingClicked.y / zoomLevel });
+            setTextAreaVisible(true);
+            setEditableText(drawingClicked.text);
+        } else if (mode === 'text') {
             setTextAreaPos({ x: mousePos.x, y: mousePos.y });
             setTextAreaVisible(true);
+            setEditableText("");
         }
     };
+
 
     const handleTextSubmit = (text: string) => {
         const canvasDrawing = drawingCanvasRef.current;
         const ctx = canvasDrawing?.getContext("2d");
 
         if (ctx) {
-            ctx.font = fontSize + "px Arial";
+            ctx.font = `${fontSize}px Arial`;
             ctx.fillStyle = colorSelected;
-            ctx.fillText(text, mousePos.x * zoomLevel, mousePos.y * zoomLevel);
 
-            setDrawings((prev) => [...prev, {
-                type: 'text',
-                color: colorSelected,
-                x: mousePos.x * zoomLevel,
-                y: mousePos.y * zoomLevel,
-                text,
-            }]);
+            if (getTextClicked()) {
+                const drawingClicked = getTextClicked();
+                if (drawingClicked) {
+                    drawingClicked.text = text;
+                }
+            } else {
+                ctx.fillText(text, mousePos.x * zoomLevel, mousePos.y * zoomLevel);
+                setDrawings((prev) => [
+                    ...prev,
+                    {
+                        id: Math.random(),
+                        type: 'text',
+                        color: colorSelected,
+                        x: mousePos.x * zoomLevel,
+                        y: mousePos.y * zoomLevel,
+                        text: text,
+                    },
+                ]);
+            }
         }
+        renderDrawings()
         setTextAreaVisible(false);
-    }
+    };
+
+
+    const getTextClicked = () => {
+        const drawingClicked = drawings.find((d) => {
+            if (d.type !== 'text') return false;
+
+            const ctx = drawingCanvasRef.current?.getContext("2d");
+            if (!ctx) return false;
+
+            ctx.font = `${fontSize}px Arial`;
+            const textWidth = ctx.measureText(d.text).width;
+            const textHeight = fontSize;
+
+            const left = d.x / zoomLevel;
+            const right = left + textWidth / zoomLevel;
+            const top = d.y / zoomLevel - textHeight / zoomLevel;
+            const bottom = d.y / zoomLevel;
+            return mousePos.x >= left && mousePos.x <= right && mousePos.y >= top && mousePos.y <= bottom;
+        });
+
+        if (drawingClicked != null) {
+            console.log(drawings.find((d) => d.x * zoomLevel === drawingClicked.x && d.y * zoomLevel === drawingClicked.y));
+
+            return drawingClicked;
+        } else {
+            return null;
+        }
+    };
+
+
 
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDrawing || !drawingCanvasRef.current) return;
@@ -246,6 +297,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                         const textToDelete = newMousePos.x > drawing.x && newMousePos.x < drawing.x + textWidth &&
                             newMousePos.y > drawing.y - textHeight && newMousePos.y < drawing.y;
                         setDrawings(prev => prev.filter(d => !(d === drawing && textToDelete)));
+
                     }
 
                     return true;
@@ -253,8 +305,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             });
         }
 
-        setMousePos(newMousePos);
         renderDrawings();
+        setMousePos(newMousePos);
     };
 
     const renderDrawings = () => {
@@ -358,7 +410,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     useEffect(() => {
         if (mode === 'text' && inCanvas) {
             document.body.style.cursor = 'text';
-            console.log(document.body.style.cursor);
         } else {
             document.body.style.cursor = 'default';
         }
@@ -406,12 +457,12 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         <div className="relative md:w-[90vw] md:h-[50vw] w-[90vw] h-full lg:h-[94%] lg:w-1/1 bg-gray-400 dark:bg-slate-600 rounded-md flex flex-col items-center justify-end text-white">
             <motion.div
                 onMouseLeave={() => setIndexOpen(false)}
-                animate={{ width: indexOpen ? '20%' : '0%', opacity: indexOpen ? 1 : 0 }}
-                className="flex justify-center  absolute w-30 h-full bg-primary dark:bg-slate-600 z-50 left-0">
+                animate={{ width: indexOpen ? '20%' : '0%', opacity: indexOpen ? 1 : 0, display: indexOpen ? 'block' : 'none' }}
+                className={`flex justify-center  absolute w-30 h-full bg-primary dark:bg-slate-600 z-30 left-0 overflow-hidden overflow-y-scroll`}>
                 <div className="flex flex-col items-center my-10 px-5">
                     <span className="pb-5">Sumário</span>
                     <motion.div
-                        className="flex flex-col gap-3 items-center overflow-y-scroll h-full">
+                        className="flex flex-col gap-3 items-center h-full">
                         {pdfPagesUrls.map((url, index) => (
                             <motion.div
                                 key={index}
@@ -459,10 +510,12 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 <div className="flex flex-col gap-3 ">
                     <div className="flex gap-3 h-16 items-center">
                         <ButtonComponent icon="pi-pencil" onClick={() => toggleMode('draw')} />
-                        <ButtonComponent icon="pi-eraser" onClick={() => (toggleMode('erase'), setColorSelected('rgba(255, 255, 255, 1)'))} />
-                        <ButtonComponent onClick={() => setMode('text')} ><TextFieldsIcon /></ButtonComponent>
+                        <ButtonComponent icon="pi-eraser" onClick={() => (toggleMode('erase'))} />
+                        {/* Retirada para colocar no ambiente de produção (ainda tem muitos problemas) 
+                        <ButtonComponent onClick={() => setMode('text')><TextFieldsIcon /></ButtonComponent>*/}
+                        <ButtonComponent onClick={() => alert("Essa função está temporariamente desativada por causa instabilidade")} ><TextFieldsIcon /></ButtonComponent>
                         <ButtonComponent onClick={() => toggleMode('none')}><PanToolAltIcon /></ButtonComponent>
-
+                        
                     </div>
                     <div className="flex justify-center text-sm">
                         <span>Ferramentas</span>
@@ -546,20 +599,21 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     </div>
                 </motion.div>
                 {file.url && (
-                    <div className="relative w-full h-full  overflow-hidden flex ">
+                    <div className="relative w-full h-full justify-center overflow-hidden flex overflow-y-auto">
                         <canvas ref={canvasRef} className="absolute z-10 " />
                         <canvas
                             onMouseOver={() => setInCanvas(true)}
                             onMouseOut={() => setInCanvas(false)}
                             ref={drawingCanvasRef}
-                            onClick={writeInPdf}
+                            // Retirada para colocar no ambiente de produção (ainda tem muitos problemas)
+                            // onClick={writeInPdf}
                             className="absolute z-20 w-fit h-fit"
                             onMouseDown={startDrawing}
                             onMouseMove={draw}
                             onMouseUp={() => setIsDrawing(false)}
                         />
                         {textAreaVisible && (
-                            <TextAreaComponent fontsize={fontSize} fontColor={colorSelected} x={textAreaPos.x} y={textAreaPos.y} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
+                            <TextAreaComponent editableText={editableText} fontsize={fontSize} fontColor={colorSelected} x={textAreaPos.x} y={textAreaPos.y} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
                         )}
                     </div>
                 )}

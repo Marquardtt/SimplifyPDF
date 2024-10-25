@@ -15,9 +15,77 @@ html::-webkit-scrollbar {
     display: none;
 }
 
-div::-webkit-scrollbar {
-    display: none;
+div::-webkit-scrollbar-track {
+    background-color: #F4F4F4;
 }
+
+div::-webkit-scrollbar {
+    width: 8%;
+    background: #F4F4F4;
+}
+
+/* Thumb (bolinha) do slider */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #0d6efd; /* Cor da bolinha para o modo claro */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+input[type="range"] {
+    -webkit-appearance: none; /* Remove o estilo padrão */
+    width: 70%;
+    background: transparent; /* Remove o fundo do range */
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    background: #ddd; /* Cor do track para o modo claro */
+    border-radius: 10px;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    background: #0a58ca; /* Cor ao passar o mouse */
+    box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.3);
+}
+
+.dark input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #8a8a8a; /* Cor da bolinha para o modo claro */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+
+.dark input[type="range"]::-webkit-slider-thumb:hover {
+    background: #8a8a8a; /* Cor ao passar o mouse */
+    box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.3);
+}
+
+div::-webkit-scrollbar-thumb {
+    background: #0d6efd;
+    border-radius: 10px;
+}
+
+.dark div::-webkit-scrollbar-track {
+    background-color: #F4F4F4;
+}
+
+.dark div::-webkit-scrollbar {
+    width: 8px;
+    background-color: #F4F4F4;
+}
+
+.dark div::-webkit-scrollbar-thumb {
+    background-color: #000000;
+    border-radius: 10px;
+}
+
 
 canvas::-webkit-scrollbar {
     display: block;
