@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.entry";
 
@@ -22,7 +22,7 @@ export const PDFView = ({ url }: PDFViewProps) => {
         loadPDF();
     }, [url]);
 
-    const renderPdf = async (pageNumber: number) => {
+    const renderPdf = useCallback(async (pageNumber: number) => {
         if (!canvasRef.current) return;
 
         const page = await pdf.getPage(pageNumber);
@@ -45,13 +45,13 @@ export const PDFView = ({ url }: PDFViewProps) => {
 
         await renderTaskRef.current.promise;
         renderTaskRef.current = null;
-    };
+    }, [pdf]);
 
     useEffect(() => {
         if (pdf) {
             renderPdf(1);
         }
-    }, [pdf]);
+    }, [pdf, renderPdf]);
 
     return (
         <canvas

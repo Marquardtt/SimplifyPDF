@@ -64,7 +64,7 @@ export function PageContentComponent({ func }: PageContentProps) {
         if (selectedFile !== null && files) {
             getPageCount(selectedFile);
         }
-    }, [selectedFile]);
+    }, [selectedFile, files]);
 
     const moveFile = (dragIndex: number, hoverIndex: number) => {
         if (files && setFiles) {
@@ -87,7 +87,7 @@ export function PageContentComponent({ func }: PageContentProps) {
         if (setFiles && files) {
             setFiles(files);
         }
-    }, [files])
+    }, [files, setFiles])
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-10">
