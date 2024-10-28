@@ -19,6 +19,7 @@ import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import { IndexComponent } from "./components/IndexComponent/IndexComponent";
+import { DrawingsContext } from "@/contexts/DrawingsContext";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -164,11 +165,12 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
     const writeInPdf = async () => {
         const drawingClicked = funcs.getTextClicked(drawings, mousePos, zoomLevel, drawingCanvasRef, fontSize);
-        if (drawingClicked) {
+        if (drawingClicked && mode === 'none') {
             setTextAreaVisible(true);
             setEditableText(drawingClicked.text);
             setDrawings((prev) => prev.filter((d) => d !== drawingClicked));
-        } else if (mode === 'text') {
+        } else if (mode === 'text' && !drawingClicked) {
+            toggleMode('none')
             setTextAreaVisible(true);
             setEditableText("");
         }
@@ -237,20 +239,20 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         setMode(newMode);
     };
 
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (textAreaVisible && mode === 'none' && e.target !== drawingCanvasRef.current) {
-                setTextAreaVisible(false);
-                setDrawings((prev) => {
-                    return prev.filter(d => d.type !== 'text');
-                });
-            }
-        }
-        window.addEventListener('click', handleClickOutside);
-        return() =>{
-            window.removeEventListener('click', handleClickOutside);
-        }
-    },[textAreaVisible, mode])
+    // useEffect(() => {
+    //     const handleClickOutside = (e: MouseEvent) => {
+    //         if (textAreaVisible && mode === 'none' && e.target !== drawingCanvasRef.current) {
+    //             setTextAreaVisible(false);
+    //             setDrawings((prev) => {
+    //                 return prev.filter(d => d.type !== 'text');
+    //             });
+    //         }
+    //     }
+    //     window.addEventListener('click', handleClickOutside);
+    //     return() =>{
+    //         window.removeEventListener('click', handleClickOutside);
+    //     }
+    // },[textAreaVisible, mode])
 
     return (
         <div className="relative md:w-[90vw] md:h-[50vw] w-[90vw] h-full lg:h-[94%] lg:w-1/1 bg-gray-400 dark:bg-slate-600 rounded-md flex flex-col items-center justify-end text-white">
@@ -381,7 +383,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                             onMouseOver={() => setInCanvas(true)}
                             onMouseOut={() => setInCanvas(false)}
                             ref={drawingCanvasRef}
-                            onClick={() => (writeInPdf(), toggleMode('none'))}
+                            onClick={() => (writeInPdf())}
                             className="absolute z-20"
                             onMouseDown={startDrawing}
                             onMouseMove={draw}
