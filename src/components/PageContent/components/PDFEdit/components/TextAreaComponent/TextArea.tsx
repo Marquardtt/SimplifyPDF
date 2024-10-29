@@ -6,7 +6,7 @@ interface TextAreaComponentProps {
     y?: number;
     zoomLevel: number;
     onTextSubmit: (text: string) => void;
-    fontsize?: number;
+    fontsize?:() => string;
     fontColor?: string;
     onclick?: () => void;
     editableText?: string;
@@ -17,11 +17,26 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef
     const [isFocused, setIsFocused] = useState(true);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const [position, setPosition] = useState({ x: x, y: y });
+    const [resize, setResize] = useState({w: 40, h:40});
 
-    const handleBlur = () => {
-        setIsFocused(false);
+    const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+        const textConfigElement = document.getElementById('textConfig');
+
+        if (
+            textConfigElement?.contains(e.relatedTarget as Node) ||
+            textAreaRef.current?.contains(e.relatedTarget as Node)
+        ) {
+            return;
+        }
+    
+        setIsFocused(false); 
         onTextSubmit(textAreaRef.current?.value || '');
     };
+    
+    const handleClickOutside = () => {
+        setIsFocused(true); 
+    };
+    
 
     const handleFocus = () => {
         setIsFocused(true);
@@ -53,6 +68,24 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef
         }
     }, [editableText, isFocused]);
 
+    const handleResize = () => {
+        if (textAreaRef.current) {
+            setResize({
+                w: textAreaRef.current.offsetWidth,
+                h: textAreaRef.current.offsetHeight,
+            });
+        }
+    };
+
+    useEffect(() => {
+        if (textAreaRef.current) {
+            const observer = new ResizeObserver(() => handleResize());
+            observer.observe(textAreaRef.current);
+
+            return () => observer.disconnect();
+        }
+    }, []);
+
     return (
         <Draggable 
         defaultClassName='absolute'
@@ -62,13 +95,16 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef
         }}
         onDrag={(e, data) => setPosition({ x: data.x, y: data.y })}>
             <textarea
-                onClick={onclick}
+                onClick={() => (onclick?.(), handleClickOutside())}
                 style={{
                     color: fontColor,
                     fontSize: fontsize + 'px',
                     border: isFocused ? '2px dashed gray' : 'none',
+                    width: resize.w + 'px',
+                    height: resize.h + 'px',
                 }}
-                className='relative h-fit w-fit overflow-hidden z-20 bg-transparent outline-none resize-none rounded-md'
+                
+                className='relative overflow-hidden z-20 bg-transparent outline-none resize rounded-md'
                 ref={textAreaRef}
                 onFocus={handleFocus}
                 onBlur={handleBlur}

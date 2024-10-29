@@ -46,16 +46,19 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const [indexOpen, setIndexOpen] = useState(false);
     const presetColors = ["#000000", "#7F7F7F", "#880015", "#D20103", "#FF7F27", "#FFF200", "#22B14C", "#00A2E8", "#FFFFFF", "#C3C3C3", "#B97A57", "#FFAEC9", "#FFC90E", "#B5E61D", "#99D9EA", "#C8BFE7"]
     const [textAreaVisible, setTextAreaVisible] = useState(false);
-    const [fontSize, setFontSize] = useState(12);
+    const [fontSize, setFontSize] = useState(6);
     const [inCanvas, setInCanvas] = useState(false);
     const [editableText, setEditableText] = useState<string>("");
+    const [textConfg, setTextConfg] = useState(false);
+    const [fontBold, setFontBold] = useState(false);
+    const [editingText, setEditingText] = useState<any>(null);
 
     useEffect(() => {
         const loadPDF = async () => {
             const loadingTask = pdfjsLib.getDocument(file);
             const loadedPDF = await loadingTask.promise;
             setPdf(loadedPDF);
-
+            console.log(canvasRef);
             const urls: string[] = [];
             for (let i = 1; i <= loadedPDF.numPages; i++) {
                 const page = await loadedPDF.getPage(i);
@@ -98,7 +101,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     }, [mode, inCanvas])
 
-
     const handleUndo = useCallback(() => {
         if (drawings.length > 0) {
             const lastDrawing = drawings[drawings.length - 1];
@@ -128,10 +130,10 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     }, [handleUndo, drawings]);
 
     useEffect(() => {
-        if(drawings.find(d => d.type === 'text')) {
+        if (drawings.find(d => d.type === 'text')) {
             funcs.renderDrawings(drawingCanvasRef, drawings, zoomLevel);
         }
-    },[drawings])
+    }, [drawings])
 
     const handlePageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
@@ -165,19 +167,35 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
     const writeInPdf = async () => {
         const drawingClicked = funcs.getTextClicked(drawings, mousePos, zoomLevel, drawingCanvasRef, fontSize);
-        if (drawingClicked && mode === 'none') {
+        if (drawingClicked && mode === 'none' && !editingText) {
+            setEditingText(drawingClicked);
+            setFontSize(drawingClicked.fontSize);
             setTextAreaVisible(true);
+            setTextConfg(true)
             setEditableText(drawingClicked.text);
             setDrawings((prev) => prev.filter((d) => d !== drawingClicked));
+            setEditingText(null);
         } else if (mode === 'text' && !drawingClicked) {
             toggleMode('none')
+            setTextConfg(true)
             setTextAreaVisible(true);
             setEditableText("");
+        } else {
+            return
         }
     };
 
+    const textClicked = () => {
+        const drawingClicked = funcs.getTextClicked(drawings, mousePos, zoomLevel, drawingCanvasRef, fontSize);
+        if(drawingClicked){
+            return drawingClicked.fontsize
+        }else{
+            return null
+        }
+    }
+
     const handleTextSubmit = (text: string) => {
-        funcs.handleText(drawingCanvasRef, drawings, mousePos, zoomLevel, colorSelected, funcs, setDrawings, text, fontSize);
+        funcs.handleText(fontBold, drawingCanvasRef, drawings, mousePos, zoomLevel, colorSelected, funcs, setDrawings, text, fontSize);
         funcs.renderDrawings(drawingCanvasRef, drawings, zoomLevel);
         setTextAreaVisible(false);
     };
@@ -235,8 +253,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     }
 
-    const toggleMode = (newMode: 'draw' | 'erase' | 'none') => {
+    const handleFontBold = () => {
+        document.querySelector("textarea")!.style.fontWeight = "700"
+        setFontBold(true)
+    }
+
+    const toggleMode = (newMode: 'draw' | 'erase' | 'none' | 'text') => {
         setMode(newMode);
+        setTextConfg(false)
     };
 
     // useEffect(() => {
@@ -293,8 +317,8 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     <div className="flex gap-3 h-16 items-center">
                         <ButtonComponent icon="pi-pencil" onClick={() => toggleMode('draw')} />
                         <ButtonComponent icon="pi-eraser" onClick={() => (toggleMode('erase'))} />
-                        <ButtonComponent onClick={() => setMode('text')}><TextFieldsIcon /></ButtonComponent>
-                        <ButtonComponent onClick={() => toggleMode('none')}><PanToolAltIcon /></ButtonComponent>
+                        <ButtonComponent onClick={() => (setMode('text'), setTextConfg(true))}><TextFieldsIcon /></ButtonComponent>
+                        <ButtonComponent onClick={() => (toggleMode('none'))}><PanToolAltIcon /></ButtonComponent>
                     </div>
                     <div className="flex justify-center text-sm">
                         <span>Ferramentas</span>
@@ -306,7 +330,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                         <div className=" w-full rounded-md h-16 flex gap-3 items-center">
                             <div className="grid grid-rows-2 grid-cols-8 gap-3">
                                 {presetColors.map((c) => (
-                                    <ColorBallComponent key={c} onClick={() => (setColorSelected(c), toggleMode('draw'))} color={[c]} />
+                                    <ColorBallComponent key={c} onClick={() => (setColorSelected(c))} color={[c]} />
                                 ))}
                             </div>
                             <div className="relative w-7 h-7 rounded-full flex justify-center">
@@ -321,7 +345,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                                     onChange={(e) => {
                                         setColorSelected(e.currentTarget.value);
                                         setColorPicker(e.currentTarget.value);
-                                        toggleMode('draw');
                                     }}
                                 />
                                 <label className="flex justify-center items-center" htmlFor="colorPicker"></label>
@@ -348,9 +371,10 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             </div >
             <div className="relative bg-gray-300 dark:bg-gray-500 w-full h-full">
                 <motion.div
-                    animate={{ height: mode === 'text' ? '55px' : '0px', opacity: mode === 'text' ? 1 : 0 }}
+
+                    animate={{ height: textConfg ? '55px' : '0px', opacity: textConfg ? 1 : 0 }}
                     className=" z-[1000] top-0 left-[31%] absolute w-[34vw] text-black overflow-hidden ">
-                    <div className="bg-primary dark:bg-slate-600 w-full h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
+                    <div id="textConfig" className="bg-primary dark:bg-slate-600 w-full h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
                         <div>
                             <select className="outline-none rounded-md" id="fontFamily">
                                 <option value="Arial">Arial</option>
@@ -358,14 +382,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                             </select>
                         </div>
                         <div>
-                            <select className="outline-none rounded-md" id="fontSize" onChange={(e) => (setFontSize(parseInt(e.target.value)))}>
-                                {Array.from({ length: 30 }, (_, i) => i + 1).map((i: any) => (
+                            <select value={fontSize} className="outline-none rounded-md" id="fontSize" onChange={(e) => (setFontSize(parseInt(e.target.value)))}>
+                                {Array.from({ length: 25 }, (_, i) => i + 6).map((i: any) => (
                                     <option key={i} value={i}>{i}</option>
                                 ))}
                             </select>
                         </div>
                         <div className="w-[2px] h-[2rem] bg-gray-500"></div>
-                        <ButtonComponent onClick={() => { }} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
+                        <ButtonComponent onClick={() => handleFontBold()} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
                         <ButtonComponent onClick={() => { }} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
                         <ButtonComponent onClick={() => { }} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
                         <ButtonComponent onClick={() => { }} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
@@ -377,9 +401,9 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 </motion.div>
                 {file.url && (
                     <div className="relative w-full h-full flex overflow-hidden overflow-y-auto">
-                        <motion.canvas animate={{ top: mode === 'text' ? 70 : 0 }} ref={canvasRef} className="absolute z-10" />
+                        <motion.canvas animate={{ top: textConfg ? 70 : 0 }} ref={canvasRef} className="absolute z-10" />
                         <motion.canvas
-                            animate={{ top: mode === 'text' ? 70 : 0 }}
+                            animate={{ top: textConfg ? 70 : 0 }}
                             onMouseOver={() => setInCanvas(true)}
                             onMouseOut={() => setInCanvas(false)}
                             ref={drawingCanvasRef}
@@ -389,10 +413,10 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                             onMouseMove={draw}
                             onMouseUp={() => setIsDrawing(false)}
                         />
-                        {textAreaVisible && mode === "none" ?(
-                            <TextAreaComponent drawingRef={drawingCanvasRef} x={mousePos.x} y={mousePos.y} editableText={editableText} fontsize={fontSize} fontColor={colorSelected} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
+                        {textAreaVisible ? (
+                            <TextAreaComponent x={mousePos.x} y={mousePos.y} editableText={editableText} fontsize={() => textClicked()} fontColor={colorSelected} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
                         ) :
-                        ("")}
+                            ("")}
                     </div>
                 )}
             </div >

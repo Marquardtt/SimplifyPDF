@@ -1,4 +1,4 @@
-export function handleText(drawingCanvasRef:any, drawings:any, mousePos:any, zoomLevel:any, colorSelected:any, funcs:any, setDrawings:any, text:any, fontSize:any) {
+export function handleText(fontWeight:any, drawingCanvasRef:any, drawings:any, mousePos:any, zoomLevel:any, colorSelected:any, funcs:any, setDrawings:any, text:any, fontSize:any) {
     const canvasDrawing = drawingCanvasRef.current;
     const ctx = canvasDrawing?.getContext("2d");
     
@@ -23,6 +23,10 @@ export function handleText(drawingCanvasRef:any, drawings:any, mousePos:any, zoo
                     y: mousePos.y,
                     text: text,
                     fontSize: fontSize, 
+                    fontWeight: fontWeight,
+                    // boxWidth: boxDimension.width,
+                    // boxHeight: boxDimension.height,
+                    // fontStyle: fontStyle, 
                 },
             ]);
         }
