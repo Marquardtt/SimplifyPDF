@@ -5,12 +5,17 @@ export async function renderPdf(canvasRef:any, pdf:any, pageNumber: number, zoom
 
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
-    
+    let page = await pdf.getPage(1);
     if (context) {
         context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    const page = await pdf.getPage(pageNumber);
+    try{
+        page = await pdf.getPage(pageNumber);
+    } catch (err) {
+        
+    }
+
     const viewport = page.getViewport({ scale: zoom });
 
     canvas.height = viewport.height;

@@ -19,7 +19,6 @@ import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import { IndexComponent } from "./components/IndexComponent/IndexComponent";
-import { DrawingsContext } from "@/contexts/DrawingsContext";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -52,6 +51,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const [textConfg, setTextConfg] = useState(false);
     const [fontBold, setFontBold] = useState(false);
     const [editingText, setEditingText] = useState<any>(null);
+    const [textFunc, setTextFunc] = useState<'bold' | 'italic' | 'underline' | 'strike' | 'none'>('none');
 
     useEffect(() => {
         const loadPDF = async () => {
@@ -88,18 +88,16 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     }, [file]);
 
     useEffect(() => {
+        if (textFunc == 'bold'){
+            document.getElementById('text')!.style.fontWeight = 'bold';
+        }
+    }, [])
+
+    useEffect(() => {
         if (pdf) {
             funcs.renderPdf(canvasRef, pdf, parseInt(pageNumber!), zoomLevel, renderTaskRef, drawingCanvasRef, drawings);
         }
     }, [pdf, zoomLevel, pageNumber]);
-
-    useEffect(() => {
-        if (mode === 'text' && inCanvas) {
-            document.body.style.cursor = 'text';
-        } else {
-            document.body.style.cursor = 'default';
-        }
-    }, [mode, inCanvas])
 
     const handleUndo = useCallback(() => {
         if (drawings.length > 0) {
@@ -110,6 +108,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             funcs.renderDrawings(drawingCanvasRef, drawings, zoomLevel);
         }
     }, [drawings, tempDrawings, drawingCanvasRef, zoomLevel]);
+
+    useEffect(() => {
+        if (mode === 'text' && inCanvas) {
+            document.body.style.cursor = 'text';
+        } else {
+            document.body.style.cursor = 'default';
+        }
+    }, [mode, inCanvas])
 
     useEffect(() => {
         const handle = setTimeout(() => {
@@ -149,6 +155,10 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     };
 
+    const handleTextFunctionChange = (func: any) => {
+        setTextFunc(func)
+    }
+
     const zoomChange = (inOrOut: string) => {
         setZoomLevel((prevZoom) => Math.min(Math.max(prevZoom + (inOrOut === 'in' ? 0.1 : -0.1), 0.5), 3));
     };
@@ -187,9 +197,9 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
     const textClicked = () => {
         const drawingClicked = funcs.getTextClicked(drawings, mousePos, zoomLevel, drawingCanvasRef, fontSize);
-        if(drawingClicked){
+        if (drawingClicked) {
             return drawingClicked.fontsize
-        }else{
+        } else {
             return null
         }
     }
@@ -254,8 +264,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     }
 
     const handleFontBold = () => {
-        document.querySelector("textarea")!.style.fontWeight = "700"
-        setFontBold(true)
+
     }
 
     const toggleMode = (newMode: 'draw' | 'erase' | 'none' | 'text') => {
@@ -295,7 +304,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                         <ButtonComponent onClick={() => funcs.handleRedo} ><RedoIcon /></ButtonComponent>
                         <ButtonComponent icon="pi-minus" onClick={() => zoomChange('out')} />
                         <ButtonComponent icon="pi-plus" onClick={() => zoomChange('in')} />
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 truncate">
                             <input
                                 type="number"
                                 value={pageNumber || 1}
@@ -364,43 +373,44 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     </div>
                     <div className="text-sm flex justify-center"><span>Tamanho</span></div>
                 </div>
-                <div className="absolute right-0  px-3 flex justify-center items-center gap-2">
+                <div className="absolute lg:right-0 px-3 flex flex-col justify-center items-center gap-2">
                     <ButtonComponent icon="pi-check" onClick={() => saveDef()} />
                     <ButtonComponent icon="pi-times" onClick={() => closeModal(false)} color={'#E00B0B'} />
                 </div>
             </div >
-            <div className="relative bg-gray-300 dark:bg-gray-500 w-full h-full">
+            <div className="relative bg-gray-300 dark:bg-gray-500 w-full h-full flex justify-center">
                 <motion.div
 
                     animate={{ height: textConfg ? '55px' : '0px', opacity: textConfg ? 1 : 0 }}
-                    className=" z-[1000] top-0 left-[31%] absolute w-[34vw] text-black overflow-hidden ">
-                    <div id="textConfig" className="bg-primary dark:bg-slate-600 w-full h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
-                        <div>
-                            <select className="outline-none rounded-md" id="fontFamily">
+                    className=" z-[1000] absolute text-black overflow-hidden">
+                    <div id="textConfig" className="px-3 bg-primary dark:bg-slate-600 w-fit h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
+                        <div className="flex gap-3 items-center justify-center w-full">
+                            <select className=" outline-none rounded-md" id="fontFamily">
                                 <option value="Arial">Arial</option>
                                 <option value="Times New Roman">Times New Roman</option>
                             </select>
+                            <div>
+                                <select value={fontSize} className="outline-none rounded-md" id="fontSize" onChange={(e) => (setFontSize(parseInt(e.target.value)))}>
+                                    {Array.from({ length: 25 }, (_, i) => i + 6).map((i: any) => (
+                                        <option key={i} value={i}>{i}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="w-[2px] h-[2rem] bg-gray-500"></div>
+                            <ButtonComponent onClick={() => handleTextFunctionChange('bold')} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent onClick={() => handleTextFunctionChange('italic')} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent onClick={() => handleTextFunctionChange('underline')} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent onClick={() => handleTextFunctionChange('strike')} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
+
+                            <div className="w-[2px] h-[2rem] bg-gray-500"></div>
+                            <ButtonComponent icon="pi pi-align-left" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent>
+                            <ButtonComponent icon="pi pi-align-center" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent>
+                            <ButtonComponent icon="pi pi-align-right" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent>
                         </div>
-                        <div>
-                            <select value={fontSize} className="outline-none rounded-md" id="fontSize" onChange={(e) => (setFontSize(parseInt(e.target.value)))}>
-                                {Array.from({ length: 25 }, (_, i) => i + 6).map((i: any) => (
-                                    <option key={i} value={i}>{i}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="w-[2px] h-[2rem] bg-gray-500"></div>
-                        <ButtonComponent onClick={() => handleFontBold()} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
-                        <ButtonComponent onClick={() => { }} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
-                        <ButtonComponent onClick={() => { }} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
-                        <ButtonComponent onClick={() => { }} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
-                        <div className="w-[2px] h-[2rem] bg-gray-500"></div>
-                        <ButtonComponent icon="pi-align-left" onClick={() => { }}> </ButtonComponent>
-                        <ButtonComponent icon="pi-align-center" onClick={() => { }}> </ButtonComponent>
-                        <ButtonComponent icon="pi-align-right" onClick={() => { }}> </ButtonComponent>
                     </div>
                 </motion.div>
                 {file.url && (
-                    <div className="relative w-full h-full flex overflow-hidden overflow-y-auto">
+                    <div className="relative w-full h-full flex justify-center overflow-hidden overflow-y-auto">
                         <motion.canvas animate={{ top: textConfg ? 70 : 0 }} ref={canvasRef} className="absolute z-10" />
                         <motion.canvas
                             animate={{ top: textConfg ? 70 : 0 }}
