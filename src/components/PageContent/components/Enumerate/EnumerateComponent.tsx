@@ -49,7 +49,7 @@ export const EnumerateComponent = () => {
             whileTap={{ scale: 1.0 }}
             whileHover={{ scale: 1.1 }}
             className=" dark:bg-black bg-primary w-40 h-12 rounded-md flex items-center justify-center cursor-pointer text-white font-bold" onClick={handleEnumerate}>
-            <span className="text-center">Numerar PDFs</span>
+            <span className="text-center">Enumerar PDFs</span>
         </motion.div>
     )
 }
