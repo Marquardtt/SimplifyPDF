@@ -43,13 +43,12 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const [drawings, setDrawings] = useState<any[]>([]);
     const [tempDrawings, setTempDrawings] = useState<any[]>([]);
     const [indexOpen, setIndexOpen] = useState(false);
-    const presetColors = ["#000000", "#7F7F7F", "#880015", "#D20103", "#FF7F27", "#FFF200", "#22B14C", "#00A2E8", "#FFFFFF", "#C3C3C3", "#B97A57", "#FFAEC9", "#FFC90E", "#B5E61D", "#99D9EA", "#C8BFE7"]
+    const presetColors = ["#000000", "#7F7F7F", "#880015", "#D20103", "#FF7F27", "#FFF200", "#22B14C", "#00A2E8", "#FFFFFF", "#C3C3C3", "#FFC90E", "#B5E61D"]
     const [textAreaVisible, setTextAreaVisible] = useState(false);
     const [fontSize, setFontSize] = useState(6);
     const [inCanvas, setInCanvas] = useState(false);
     const [editableText, setEditableText] = useState<string>("");
     const [textConfg, setTextConfg] = useState(false);
-    const [fontBold, setFontBold] = useState(false);
     const [editingText, setEditingText] = useState<any>(null);
     const [textFunc, setTextFunc] = useState<'bold' | 'italic' | 'underline' | 'strike' | 'none'>('none');
 
@@ -86,12 +85,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         };
         loadPDF();
     }, [file]);
-
-    useEffect(() => {
-        if (textFunc == 'bold'){
-            document.getElementById('text')!.style.fontWeight = 'bold';
-        }
-    }, [])
 
     useEffect(() => {
         if (pdf) {
@@ -155,9 +148,60 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     };
 
-    const handleTextFunctionChange = (func: any) => {
-        setTextFunc(func)
+    const handleTextFunctionChange = (func: any, e: MouseEvent) => {
+        const element = e.target as HTMLElement;
+        const bold = document.getElementById('bold');
+        const italic = document.getElementById('italic');
+        const underline = document.getElementById('underline');
+        const strike = document.getElementById('strike');
+        setTextStyle()
+        if (element.id === func) {
+            setTextFunc(func)
+            element.style.backgroundColor = "#0d6efd"
+            if (element != bold) {
+                bold!.style.backgroundColor = "#6B7280"
+            }
+            if (element != italic) {
+                italic!.style.backgroundColor = "#6B7280"
+            }
+            if (element != underline) {
+                underline!.style.backgroundColor = "#6B7280"
+            }
+            if (element != strike) {
+                strike!.style.backgroundColor = "#6B7280"
+            }
+        }
     }
+
+    function setTextStyle() {
+        const selection = document.getSelection();
+    
+        if (!selection || selection.rangeCount === 0) return;
+    
+        const range = selection.getRangeAt(0);
+    
+        const span = document.createElement('span');
+        switch (textFunc) {
+            case 'bold':
+                span.style.fontWeight = 'bold';
+                break;
+            case 'italic':
+                span.style.fontStyle = 'italic';
+                break;
+            case 'underline':
+                span.style.textDecoration = 'underline';
+                break;
+            case 'strike':
+                span.style.textDecoration = 'line-through';
+                break;
+        }
+    
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+    
+        selection.removeAllRanges();
+    }
+    
 
     const zoomChange = (inOrOut: string) => {
         setZoomLevel((prevZoom) => Math.min(Math.max(prevZoom + (inOrOut === 'in' ? 0.1 : -0.1), 0.5), 3));
@@ -168,8 +212,9 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         const rect = canvasDrawing?.getBoundingClientRect();
         setMousePos({
             x: (e.clientX - rect!.left) / zoomLevel,
-            y: (e.clientY - rect!.top) / zoomLevel,
+            y: (e.clientY - rect!.top) / zoomLevel
         });
+
         if (mode === 'draw' || mode === 'erase') {
             setIsDrawing(true);
         }
@@ -204,8 +249,25 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     }
 
+
+    //ALTERAR DEPOIS
+    //
+    //
+    //
+    //FONT BOLD
+    //
+    //
+    //    //
+    //
+    //    //
+    //
+    //    //
+    //
+    //    //
+    //
+    //
     const handleTextSubmit = (text: string) => {
-        funcs.handleText(fontBold, drawingCanvasRef, drawings, mousePos, zoomLevel, colorSelected, funcs, setDrawings, text, fontSize);
+        funcs.handleText(false, drawingCanvasRef, drawings, mousePos, zoomLevel, colorSelected, funcs, setDrawings, text, fontSize);
         funcs.renderDrawings(drawingCanvasRef, drawings, zoomLevel);
         setTextAreaVisible(false);
     };
@@ -261,10 +323,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             newFiles.splice(newFiles.indexOf(file), 1, savedFile);
             setFiles(newFiles);
         }
-    }
-
-    const handleFontBold = () => {
-
     }
 
     const toggleMode = (newMode: 'draw' | 'erase' | 'none' | 'text') => {
@@ -337,7 +395,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 <div className="flex flex-col gap-3">
                     <div className="flex w-full gap-3">
                         <div className=" w-full rounded-md h-16 flex gap-3 items-center">
-                            <div className="grid grid-rows-2 grid-cols-8 gap-3">
+                            <div className="grid grid-rows-2 grid-cols-6 gap-3">
                                 {presetColors.map((c) => (
                                     <ColorBallComponent key={c} onClick={() => (setColorSelected(c))} color={[c]} />
                                 ))}
@@ -383,7 +441,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
                     animate={{ height: textConfg ? '55px' : '0px', opacity: textConfg ? 1 : 0 }}
                     className=" z-[1000] absolute text-black overflow-hidden">
-                    <div id="textConfig" className="px-3 bg-primary dark:bg-slate-600 w-fit h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
+                    <div id="textConfig" className="px-3 bg-gray-400 dark:bg-slate-600 w-fit h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
                         <div className="flex gap-3 items-center justify-center w-full">
                             <select className=" outline-none rounded-md" id="fontFamily">
                                 <option value="Arial">Arial</option>
@@ -396,16 +454,16 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                                     ))}
                                 </select>
                             </div>
-                            <div className="w-[2px] h-[2rem] bg-gray-500"></div>
-                            <ButtonComponent onClick={() => handleTextFunctionChange('bold')} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
-                            <ButtonComponent onClick={() => handleTextFunctionChange('italic')} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
-                            <ButtonComponent onClick={() => handleTextFunctionChange('underline')} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
-                            <ButtonComponent onClick={() => handleTextFunctionChange('strike')} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
+                            {/* <div className="w-[2px] h-[2rem] bg-gray-500"></div>
+                            <ButtonComponent title="bold" bg={"bg-gray-500"} onClick={(e) => handleTextFunctionChange('bold', e)} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent title="italic" bg={"bg-gray-500"} onClick={(e) => handleTextFunctionChange('italic', e)} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent title="underline" bg={"bg-gray-500"} onClick={(e) => handleTextFunctionChange('underline', e)} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent title="strike" bg={"bg-gray-500"} onClick={(e) => handleTextFunctionChange('strike', e)} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
 
                             <div className="w-[2px] h-[2rem] bg-gray-500"></div>
                             <ButtonComponent icon="pi pi-align-left" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent>
                             <ButtonComponent icon="pi pi-align-center" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent>
-                            <ButtonComponent icon="pi pi-align-right" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent>
+                            <ButtonComponent icon="pi pi-align-right" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent> */}
                         </div>
                     </div>
                 </motion.div>
@@ -424,7 +482,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                             onMouseUp={() => setIsDrawing(false)}
                         />
                         {textAreaVisible ? (
-                            <TextAreaComponent x={mousePos.x} y={mousePos.y} editableText={editableText} fontsize={() => textClicked()} fontColor={colorSelected} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
+                            <TextAreaComponent canvasElement={canvasRef.current} drawingRef={drawingCanvasRef} x={mousePos.x} y={mousePos.y} editableText={editableText} fontsize={() => textClicked()} fontColor={colorSelected} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
                         ) :
                             ("")}
                     </div>
