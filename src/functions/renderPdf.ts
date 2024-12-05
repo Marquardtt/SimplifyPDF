@@ -11,7 +11,7 @@ export async function renderPdf(canvasRef:any, pdf:any, pageNumber: number, zoom
     }
 
     try{
-        page = await pdf.getPage(pageNumber);
+        page = await pdf.getPage(pageNumber || 1);
     } catch (err) {
         
     }

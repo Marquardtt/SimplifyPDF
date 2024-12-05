@@ -17,7 +17,7 @@ export function PageContentComponent({ func }: PageContentProps) {
     const { files, setFiles } = useContext(FilesContext);
     const [selectedFile, setSelectedFile] = useState<number | null>(null);
     const [removeFiles, setRemoveFiles] = useState(false);
-    const [pageNumber, setPageNumber] = useState<number>(0);
+    const [pageNumber, setPageNumber] = useState<number>(1);
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (setFiles && files) {
@@ -57,8 +57,6 @@ export function PageContentComponent({ func }: PageContentProps) {
             const arrayBuffer = await files?.[index]?.arrayBuffer();
             if (arrayBuffer) {
                 const pdfdoc = await PDFDocument.load(arrayBuffer);
-                const pages = pdfdoc.getPages();
-                setPageNumber(pages.length);
             }
         };
         if (selectedFile !== null && files) {
@@ -172,7 +170,7 @@ export function PageContentComponent({ func }: PageContentProps) {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 flex items-center justify-center z-50">
-                        <PDFEditComponent file={files?.[selectedFile]} pageNumber={pageNumber} closeModal={() => setSelectedFile(null)}></PDFEditComponent>
+                        <PDFEditComponent  file={files?.[selectedFile]} pageNumber={pageNumber} closeModal={() => setSelectedFile(null)}></PDFEditComponent>
                     </motion.div>
                 )}
             </AnimatePresence>
