@@ -55,7 +55,7 @@ export function HeaderComponent() {
                 <div className="w-fit">
                     <motion.span
                         onClick={() => router.push('/')}
-                        className="flex justify-center text-center cursor-pointer">SimplifyPDF</motion.span>
+                        className="flex justify-center font-bold text-center cursor-pointer">SimplifyPDF</motion.span>
                 </div>
                 <span style={{ fontSize: 25 }} onClick={() => handleTheme()} className=" cursor-pointer"><i className={` ${theme == 'dark' ? "pi pi-moon" : "pi pi-sun"}`}></i></span>
             </div>
@@ -83,7 +83,7 @@ export function HeaderComponent() {
                                 animate={{}}
                                 onClick={() => (router.push('/merge'), setHover(false))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></motion.div>
                             <motion.div onClick={() => (router.push('/enumerate'), setHover(false))} className="gap-2  flex items-center text-sm cursor-pointer"><i className="pi pi-sort-numeric-up" style={{ fontSize: 15 }}></i><span className="">Numerar PDFs</span></motion.div>
-                            <motion.div onClick={() => (alert("Pagina ainda em desenvolvimento\n\nTente utilizar o editor da página de agrupar ou numerar PDFs, basta adicionar o PDF desejado e clicar nele para abrir a visualização detalhada!"))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-cog" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
+                            <motion.div onClick={() => (alert("Página ainda em desenvolvimento\n\nUilize o editor da página de agrupar/enumerar PDFs."))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-file-edit" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
                         </motion.div>
                     </motion.div>
                 </div>
@@ -95,7 +95,7 @@ export function HeaderComponent() {
                     <motion.div
                         animate={{ opacity: hover ? "100%" : "0%" }}
                         className="flex flex-col justify-center gap-4 ">
-                        <div onClick={() => (alert("Pagina ainda em desenvolvimento"))} className="flex items-center gap-6 cursor-pointer">
+                        <div onClick={() => (alert("Página ainda em desenvolvimento"))} className="flex items-center gap-6 cursor-pointer">
                             <span>Configurações</span>
                         </div>
                     </motion.div>

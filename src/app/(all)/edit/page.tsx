@@ -3,6 +3,7 @@
 import { PDFEditComponent } from "@/components/PageContent/components/PDFEdit";
 import { FileP } from "@/models";
 import { useState } from "react";
+import { PageContentComponent } from "@/components/PageContent";
 
 export default function EditPage() {
     const [file, setFile] = useState([] as FileP[]);
@@ -23,12 +24,18 @@ export default function EditPage() {
     }
 
     return (
-        <div>
-            <div>
+        <div className="flex  w-full h-full items-center justify-center">
+            <PageContentComponent func={<></>} ></PageContentComponent>
+        </div>
+    );
+}
+
+
+{/* <div>
                 <label htmlFor="arquivo">clique aqui</label>
                 <input id="arquivo" type="file" onChange={handleFile} />
-            </div>
-            {file.length > 0 ? (
+            </div> */}
+{/* {file.length > 0 ? (
                 <div className="">
                     <PDFEditComponent file={file[0]} pageNumber={1} closeModal={function (a: any): void {
                         throw new Error("Function not implemented.");
@@ -36,7 +43,4 @@ export default function EditPage() {
                 </div>
             ) : (
                 <><span>nenhum arquivo carregado</span></>
-            )}
-        </div>
-    );
-}
+            )} */}

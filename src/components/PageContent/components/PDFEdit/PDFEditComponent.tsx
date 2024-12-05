@@ -19,7 +19,6 @@ import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import { IndexComponent } from "./components/IndexComponent/IndexComponent";
-import { DrawingsContext } from "@/contexts/DrawingsContext";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -44,14 +43,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
     const [drawings, setDrawings] = useState<any[]>([]);
     const [tempDrawings, setTempDrawings] = useState<any[]>([]);
     const [indexOpen, setIndexOpen] = useState(false);
-    const presetColors = ["#000000", "#7F7F7F", "#880015", "#D20103", "#FF7F27", "#FFF200", "#22B14C", "#00A2E8", "#FFFFFF", "#C3C3C3", "#B97A57", "#FFAEC9", "#FFC90E", "#B5E61D", "#99D9EA", "#C8BFE7"]
+    const presetColors = ["#000000", "#7F7F7F", "#880015", "#D20103", "#FF7F27", "#FFF200", "#22B14C", "#00A2E8", "#FFFFFF", "#C3C3C3", "#FFC90E", "#B5E61D"]
     const [textAreaVisible, setTextAreaVisible] = useState(false);
     const [fontSize, setFontSize] = useState(6);
     const [inCanvas, setInCanvas] = useState(false);
     const [editableText, setEditableText] = useState<string>("");
     const [textConfg, setTextConfg] = useState(false);
-    const [fontBold, setFontBold] = useState(false);
     const [editingText, setEditingText] = useState<any>(null);
+    const [textFunc, setTextFunc] = useState<'bold' | 'italic' | 'underline' | 'strike' | 'none'>('none');
 
     useEffect(() => {
         const loadPDF = async () => {
@@ -93,14 +92,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     }, [pdf, zoomLevel, pageNumber]);
 
-    useEffect(() => {
-        if (mode === 'text' && inCanvas) {
-            document.body.style.cursor = 'text';
-        } else {
-            document.body.style.cursor = 'default';
-        }
-    }, [mode, inCanvas])
-
     const handleUndo = useCallback(() => {
         if (drawings.length > 0) {
             const lastDrawing = drawings[drawings.length - 1];
@@ -110,6 +101,14 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             funcs.renderDrawings(drawingCanvasRef, drawings, zoomLevel);
         }
     }, [drawings, tempDrawings, drawingCanvasRef, zoomLevel]);
+
+    useEffect(() => {
+        if (mode === 'text' && inCanvas) {
+            document.body.style.cursor = 'text';
+        } else {
+            document.body.style.cursor = 'default';
+        }
+    }, [mode, inCanvas])
 
     useEffect(() => {
         const handle = setTimeout(() => {
@@ -149,6 +148,61 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     };
 
+    const handleTextFunctionChange = (func: any, e: MouseEvent) => {
+        const element = e.target as HTMLElement;
+        const bold = document.getElementById('bold');
+        const italic = document.getElementById('italic');
+        const underline = document.getElementById('underline');
+        const strike = document.getElementById('strike');
+        setTextStyle()
+        if (element.id === func) {
+            setTextFunc(func)
+            element.style.backgroundColor = "#0d6efd"
+            if (element != bold) {
+                bold!.style.backgroundColor = "#6B7280"
+            }
+            if (element != italic) {
+                italic!.style.backgroundColor = "#6B7280"
+            }
+            if (element != underline) {
+                underline!.style.backgroundColor = "#6B7280"
+            }
+            if (element != strike) {
+                strike!.style.backgroundColor = "#6B7280"
+            }
+        }
+    }
+
+    function setTextStyle() {
+        const selection = document.getSelection();
+    
+        if (!selection || selection.rangeCount === 0) return;
+    
+        const range = selection.getRangeAt(0);
+    
+        const span = document.createElement('span');
+        switch (textFunc) {
+            case 'bold':
+                span.style.fontWeight = 'bold';
+                break;
+            case 'italic':
+                span.style.fontStyle = 'italic';
+                break;
+            case 'underline':
+                span.style.textDecoration = 'underline';
+                break;
+            case 'strike':
+                span.style.textDecoration = 'line-through';
+                break;
+        }
+    
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+    
+        selection.removeAllRanges();
+    }
+    
+
     const zoomChange = (inOrOut: string) => {
         setZoomLevel((prevZoom) => Math.min(Math.max(prevZoom + (inOrOut === 'in' ? 0.1 : -0.1), 0.5), 3));
     };
@@ -158,8 +212,9 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         const rect = canvasDrawing?.getBoundingClientRect();
         setMousePos({
             x: (e.clientX - rect!.left) / zoomLevel,
-            y: (e.clientY - rect!.top) / zoomLevel,
+            y: (e.clientY - rect!.top) / zoomLevel
         });
+
         if (mode === 'draw' || mode === 'erase') {
             setIsDrawing(true);
         }
@@ -187,15 +242,32 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
     const textClicked = () => {
         const drawingClicked = funcs.getTextClicked(drawings, mousePos, zoomLevel, drawingCanvasRef, fontSize);
-        if(drawingClicked){
+        if (drawingClicked) {
             return drawingClicked.fontsize
-        }else{
+        } else {
             return null
         }
     }
 
+
+    //ALTERAR DEPOIS
+    //
+    //
+    //
+    //FONT BOLD
+    //
+    //
+    //    //
+    //
+    //    //
+    //
+    //    //
+    //
+    //    //
+    //
+    //
     const handleTextSubmit = (text: string) => {
-        funcs.handleText(fontBold, drawingCanvasRef, drawings, mousePos, zoomLevel, colorSelected, funcs, setDrawings, text, fontSize);
+        funcs.handleText(false, drawingCanvasRef, drawings, mousePos, zoomLevel, colorSelected, funcs, setDrawings, text, fontSize);
         funcs.renderDrawings(drawingCanvasRef, drawings, zoomLevel);
         setTextAreaVisible(false);
     };
@@ -253,11 +325,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
         }
     }
 
-    const handleFontBold = () => {
-        document.querySelector("textarea")!.style.fontWeight = "700"
-        setFontBold(true)
-    }
-
     const toggleMode = (newMode: 'draw' | 'erase' | 'none' | 'text') => {
         setMode(newMode);
         setTextConfg(false)
@@ -295,7 +362,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                         <ButtonComponent onClick={() => funcs.handleRedo} ><RedoIcon /></ButtonComponent>
                         <ButtonComponent icon="pi-minus" onClick={() => zoomChange('out')} />
                         <ButtonComponent icon="pi-plus" onClick={() => zoomChange('in')} />
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 truncate">
                             <input
                                 type="number"
                                 value={pageNumber || 1}
@@ -328,7 +395,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                 <div className="flex flex-col gap-3">
                     <div className="flex w-full gap-3">
                         <div className=" w-full rounded-md h-16 flex gap-3 items-center">
-                            <div className="grid grid-rows-2 grid-cols-8 gap-3">
+                            <div className="grid grid-rows-2 grid-cols-6 gap-3">
                                 {presetColors.map((c) => (
                                     <ColorBallComponent key={c} onClick={() => (setColorSelected(c))} color={[c]} />
                                 ))}
@@ -364,43 +431,44 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                     </div>
                     <div className="text-sm flex justify-center"><span>Tamanho</span></div>
                 </div>
-                <div className="absolute right-0  px-3 flex justify-center items-center gap-2">
+                <div className="absolute lg:right-0 px-3 flex flex-col justify-center items-center gap-2">
                     <ButtonComponent icon="pi-check" onClick={() => saveDef()} />
                     <ButtonComponent icon="pi-times" onClick={() => closeModal(false)} color={'#E00B0B'} />
                 </div>
             </div >
-            <div className="relative bg-gray-300 dark:bg-gray-500 w-full h-full">
+            <div className="relative bg-gray-300 dark:bg-gray-500 w-full h-full flex justify-center">
                 <motion.div
 
                     animate={{ height: textConfg ? '55px' : '0px', opacity: textConfg ? 1 : 0 }}
-                    className=" z-[1000] top-0 left-[31%] absolute w-[34vw] text-black overflow-hidden ">
-                    <div id="textConfig" className="bg-primary dark:bg-slate-600 w-full h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
-                        <div>
-                            <select className="outline-none rounded-md" id="fontFamily">
+                    className=" z-[1000] absolute text-black overflow-hidden">
+                    <div id="textConfig" className="px-3 bg-gray-400 dark:bg-slate-600 w-fit h-full flex justify-center py-7 gap-4 items-center rounded-b-md">
+                        <div className="flex gap-3 items-center justify-center w-full">
+                            <select className=" outline-none rounded-md" id="fontFamily">
                                 <option value="Arial">Arial</option>
                                 <option value="Times New Roman">Times New Roman</option>
                             </select>
+                            <div>
+                                <select value={fontSize} className="outline-none rounded-md" id="fontSize" onChange={(e) => (setFontSize(parseInt(e.target.value)))}>
+                                    {Array.from({ length: 25 }, (_, i) => i + 6).map((i: any) => (
+                                        <option key={i} value={i}>{i}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {/* <div className="w-[2px] h-[2rem] bg-gray-500"></div>
+                            <ButtonComponent title="bold" bg={"bg-gray-500"} onClick={(e) => handleTextFunctionChange('bold', e)} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent title="italic" bg={"bg-gray-500"} onClick={(e) => handleTextFunctionChange('italic', e)} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent title="underline" bg={"bg-gray-500"} onClick={(e) => handleTextFunctionChange('underline', e)} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
+                            <ButtonComponent title="strike" bg={"bg-gray-500"} onClick={(e) => handleTextFunctionChange('strike', e)} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
+
+                            <div className="w-[2px] h-[2rem] bg-gray-500"></div>
+                            <ButtonComponent icon="pi pi-align-left" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent>
+                            <ButtonComponent icon="pi pi-align-center" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent>
+                            <ButtonComponent icon="pi pi-align-right" onClick={() => { }}><div className="bg-black w-full h-full"></div> </ButtonComponent> */}
                         </div>
-                        <div>
-                            <select value={fontSize} className="outline-none rounded-md" id="fontSize" onChange={(e) => (setFontSize(parseInt(e.target.value)))}>
-                                {Array.from({ length: 25 }, (_, i) => i + 6).map((i: any) => (
-                                    <option key={i} value={i}>{i}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="w-[2px] h-[2rem] bg-gray-500"></div>
-                        <ButtonComponent onClick={() => handleFontBold()} ><FormatBoldIcon sx={{ color: "white" }} /></ButtonComponent>
-                        <ButtonComponent onClick={() => { }} ><FormatItalicIcon sx={{ color: "white" }} /></ButtonComponent>
-                        <ButtonComponent onClick={() => { }} ><FormatUnderlinedIcon sx={{ color: "white" }} /></ButtonComponent>
-                        <ButtonComponent onClick={() => { }} ><StrikethroughSIcon sx={{ color: "white" }} /></ButtonComponent>
-                        <div className="w-[2px] h-[2rem] bg-gray-500"></div>
-                        <ButtonComponent icon="pi-align-left" onClick={() => { }}> </ButtonComponent>
-                        <ButtonComponent icon="pi-align-center" onClick={() => { }}> </ButtonComponent>
-                        <ButtonComponent icon="pi-align-right" onClick={() => { }}> </ButtonComponent>
                     </div>
                 </motion.div>
                 {file.url && (
-                    <div className="relative w-full h-full flex overflow-hidden overflow-y-auto">
+                    <div className="relative w-full h-full flex justify-center overflow-hidden overflow-y-auto">
                         <motion.canvas animate={{ top: textConfg ? 70 : 0 }} ref={canvasRef} className="absolute z-10" />
                         <motion.canvas
                             animate={{ top: textConfg ? 70 : 0 }}
@@ -414,7 +482,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
                             onMouseUp={() => setIsDrawing(false)}
                         />
                         {textAreaVisible ? (
-                            <TextAreaComponent x={mousePos.x} y={mousePos.y} editableText={editableText} fontsize={() => textClicked()} fontColor={colorSelected} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
+                            <TextAreaComponent canvasElement={canvasRef.current} drawingRef={drawingCanvasRef} x={mousePos.x} y={mousePos.y} editableText={editableText} fontsize={() => textClicked()} fontColor={colorSelected} zoomLevel={zoomLevel} onTextSubmit={handleTextSubmit} />
                         ) :
                             ("")}
                     </div>

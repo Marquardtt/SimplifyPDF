@@ -1,25 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import Draggable from 'react-draggable';
+import { DrawingsContext } from '@/contexts/DrawingsContext';
 
 interface TextAreaComponentProps {
     x?: number;
     y?: number;
     zoomLevel: number;
     onTextSubmit: (text: string) => void;
-    fontsize?:() => string;
+    fontsize?: () => string;
     fontColor?: string;
     onclick?: () => void;
     editableText?: string;
-    drawingRef?: any;
+    drawingRef: any;
+    canvasElement: any;
 }
 
-export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef, x, y, zoomLevel, onTextSubmit, fontsize, fontColor, onclick, editableText }) => {
+export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({canvasElement, drawingRef, x, y, zoomLevel, onTextSubmit, fontsize, fontColor, onclick, editableText }) => {
     const [isFocused, setIsFocused] = useState(true);
-    const textAreaRef = useRef<HTMLTextAreaElement>(null);
+    const textAreaRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState({ x: x, y: y });
-    const [resize, setResize] = useState({w: 40, h:40});
+    const [resize, setResize] = useState({ w: 120, h: 40 });
+    const { drawings, setDrawings } = useContext(DrawingsContext);
+    const rect = drawingRef.current.getBoundingClientRect();
 
-    const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
         const textConfigElement = document.getElementById('textConfig');
 
         if (
@@ -28,15 +32,15 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef
         ) {
             return;
         }
-    
-        setIsFocused(false); 
-        onTextSubmit(textAreaRef.current?.value || '');
+
+        setIsFocused(false);
+        onTextSubmit(textAreaRef.current?.innerText || '');
     };
-    
+
     const handleClickOutside = () => {
-        setIsFocused(true); 
+        setIsFocused(true);
     };
-    
+
 
     const handleFocus = () => {
         setIsFocused(true);
@@ -50,7 +54,7 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                onTextSubmit(textAreaRef.current!.value);
+                onTextSubmit(textAreaRef.current!.innerText);
                 setIsFocused(false);
             }
         };
@@ -63,7 +67,7 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef
 
     useEffect(() => {
         if (textAreaRef.current && isFocused) {
-            textAreaRef.current.value = editableText || "";
+            textAreaRef.current.innerText = editableText || "";
             textAreaRef.current.focus();
         }
     }, [editableText, isFocused]);
@@ -77,6 +81,26 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef
         }
     };
 
+    const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const rect = drawingRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / zoomLevel;
+        const y = (e.clientY - rect.top) / zoomLevel;
+        setPosition({ x, y });
+    };
+
+
+    useEffect(() => {
+        const canvasElement = drawingRef.current; 
+        if (!canvasElement) return;
+
+        canvasElement.addEventListener('click', handleCanvasClick);
+
+        return () => {
+            canvasElement.removeEventListener('click', handleCanvasClick);
+        };
+    }, [drawingRef, zoomLevel]);
+
+
     useEffect(() => {
         if (textAreaRef.current) {
             const observer = new ResizeObserver(() => handleResize());
@@ -87,29 +111,38 @@ export const TextAreaComponent: React.FC<TextAreaComponentProps> = ({ drawingRef
     }, []);
 
     return (
-        <Draggable 
-        defaultClassName='absolute'
-        position={{
-            x: (position.x!) * zoomLevel || 0,
-            y: (position.y!) * zoomLevel || 0
-        }}
-        onDrag={(e, data) => setPosition({ x: data.x, y: data.y })}>
-            <textarea
+        <Draggable
+            defaultClassName="absolute"
+            position={{
+                x: position.x! - (canvasElement.getBoundingClientRect().left - rect.left) / zoomLevel,
+                y: position.y! - (canvasElement.getBoundingClientRect().top - rect.top) / zoomLevel,
+            }}
+            onDrag={(e, data) =>
+                setPosition({
+                    x: data.x / zoomLevel,
+                    y: data.y / zoomLevel,
+                })
+            }>
+            <div
                 onClick={() => (onclick?.(), handleClickOutside())}
+                className="relative overflow-hidden z-20 bg-transparent outline-none rounded-md w-fit"
+                contentEditable
                 style={{
+                    resize: 'both',
+                    overflow: 'hidden',
                     color: fontColor,
                     fontSize: fontsize + 'px',
                     border: isFocused ? '2px dashed gray' : 'none',
                     width: resize.w + 'px',
                     height: resize.h + 'px',
                 }}
-                
-                className='relative overflow-hidden z-20 bg-transparent outline-none resize rounded-md'
+
                 ref={textAreaRef}
                 onFocus={handleFocus}
                 onBlur={handleBlur}
-                placeholder='Escreva aqui...'
-            />
+            >
+
+            </div>
         </Draggable>
     );
 };
