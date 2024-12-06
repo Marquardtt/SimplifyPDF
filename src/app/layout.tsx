@@ -9,7 +9,6 @@ import "@/style/global.css"
 import React, { ReactNode, useState } from "react"
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-
 interface RootLayoutProps {
     children: ReactNode;
 }
@@ -19,7 +18,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
 
     return (
 
-        <html>
+        <html suppressHydrationWarning={true}>
             <head>
                 <link rel="shortcut icon" href="logo.ico" />
                 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"></link>

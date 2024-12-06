@@ -52,35 +52,37 @@ export const MainPageEditContent = () => {
 
     useEffect(() => {
         const loadPDF = async () => {
-            if (files) {
-                const loadingTask = pdfjsLib.getDocument(files[0]);
-                const loadedPDF = await loadingTask.promise;
-                setPdf(loadedPDF);
-                console.log(canvasRef);
-                const urls: string[] = [];
-                for (let i = 1; i <= loadedPDF.numPages; i++) {
-                    const page = await loadedPDF.getPage(i);
-                    const viewport = page.getViewport({ scale: 1.5 });
+            try {
+                if (files) {
+                    const loadingTask = pdfjsLib.getDocument(files[0]);
+                    const loadedPDF = await loadingTask.promise;
+                    setPdf(loadedPDF);
+                    const urls: string[] = [];
+                    for (let i = 1; i <= loadedPDF.numPages; i++) {
+                        const page = await loadedPDF.getPage(i);
+                        const viewport = page.getViewport({ scale: 1.5 });
 
-                    const canvas = document.createElement("canvas");
-                    const context = canvas.getContext("2d");
+                        const canvas = document.createElement("canvas");
+                        const context = canvas.getContext("2d");
 
-                    if (!context) {
-                        throw new Error("Erro");
+                        if (!context) {
+                            throw new Error("Erro");
+                        }
+
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport,
+                        };
+
+                        await page.render(renderContext).promise;
+                        urls.push(canvas.toDataURL());
                     }
-
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-
-                    const renderContext = {
-                        canvasContext: context,
-                        viewport,
-                    };
-
-                    await page.render(renderContext).promise;
-                    urls.push(canvas.toDataURL());
+                    setPdfPagesUrls(urls);
                 }
-                setPdfPagesUrls(urls);
+            } catch (err) {
             }
         };
         loadPDF();
@@ -177,7 +179,7 @@ export const MainPageEditContent = () => {
 
 
 
-    const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (setFiles && files) {
             if (e.target.files) {
                 const selectedFiles = Array.from(e.target.files) as FileP[];
@@ -291,17 +293,21 @@ export const MainPageEditContent = () => {
     const removeFiles = () => {
         if (setFiles && files) {
             setFiles([]);
+            setDrawings([]);
         }
     }
 
     const saveDef = async () => {
-        if (files != null) {
-            const savedFile = await funcs.save(files[0], pageNumber, drawings);
-            if (setFiles && files) {
-                const newFiles = [...files];
-                newFiles.splice(newFiles.indexOf(files[0]), 1, savedFile);
-                setFiles(newFiles);
+        try {
+            if (files != null) {
+                const savedFile = await funcs.save(files[0], pageNumber, drawings);
+                if (setFiles && files) {
+                    const newFiles = [...files];
+                    newFiles.splice(newFiles.indexOf(files[0]), 1, savedFile);
+                    setFiles(newFiles);
+                }
             }
+        } catch (err) {
         }
     }
 
@@ -439,11 +445,13 @@ export const MainPageEditContent = () => {
                         </div>
                     ) : (
                         <div
-                            className=" flex justify-center items-center border-2 border-dashed sm:w-1/2 sm:h-[30vh] sm:mx-6 h-[15vh] mx-6 rounded-md hover:bg-gray-100 dark:bg-opacity-30 duration-300"
+                            style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}
+
+                            className="flex justify-center items-center border-2 border-dashed border-gray-500 hover:border-gray-400 bg-gray-400 sm:w-1/2 sm:h-[30vh] sm:mx-6 h-[15vh] mx-6 rounded-md hover:bg-gray-500 dark:bg-opacity-30 duration-300"
                             onDrop={dragDropFile}
                             onDragOver={dragOverFile}
                         >
-                            <label className="text-center flex justify-center items-center w-11/12 h-full dark:text-white dark:opacity-100 opacity-50 text-xl font-bold" htmlFor="arquivos">
+                            <label className="text-center flex justify-center items-center w-11/12 h-full text-white dark:text-white dark:opacity-100 text-xl font-bold" htmlFor="arquivos">
                                 Arraste os arquivos até aqui ou clique para selecionar
                             </label>
                             <input

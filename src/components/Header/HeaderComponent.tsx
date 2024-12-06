@@ -54,7 +54,7 @@ export function HeaderComponent() {
                 <span style={{ fontSize: 25 }} onClick={() => setHover(!hover)} className="cursor-pointer"><i className="pi pi-bars"></i></span>
                 <div className="w-fit">
                     <motion.span
-                        onClick={() => router.push('/')}
+                        onClick={() => {router.push('/'), setHover(false)}}
                         className="flex justify-center font-bold text-center cursor-pointer">SimplifyPDF</motion.span>
                 </div>
                 <span style={{ fontSize: 25 }} onClick={() => handleTheme()} className=" cursor-pointer"><i className={` ${theme == 'dark' ? "pi pi-moon" : "pi pi-sun"}`}></i></span>

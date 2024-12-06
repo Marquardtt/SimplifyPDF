@@ -17,7 +17,7 @@ export function getTextClicked(drawings:any, mousePos:any, zoomLevel:any, drawin
     });
 
     if (drawingClicked != null) {
-        console.log(drawings.find((d:any) => d.x * zoomLevel === drawingClicked.x && d.y * zoomLevel === drawingClicked.y));
+        // console.log(drawings.find((d:any) => d.x * zoomLevel === drawingClicked.x && d.y * zoomLevel === drawingClicked.y));
 
         return drawingClicked;
     } else {

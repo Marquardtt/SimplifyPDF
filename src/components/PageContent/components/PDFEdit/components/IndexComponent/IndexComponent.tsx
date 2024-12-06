@@ -32,7 +32,7 @@ export const IndexComponent = ({ indexOpen, setIndexOpen, handlePageChange, pdfP
         <motion.div
             id="sumario"
             animate={{ width: indexOpen ? '20%' : '0%', opacity: indexOpen ? 1 : 0, display: indexOpen ? 'block' : 'none' }}
-            className={`flex justify-center absolute w-30 h-full bg-primary dark:bg-slate-600 z-30 left-0 overflow-hidden overflow-y-scroll`}>
+            className={`pt-5 flex justify-center absolute w-30 h-full bg-primary dark:bg-slate-600 z-30 left-0 overflow-hidden overflow-y-scroll`}>
             <div className="flex flex-col items-center px-5">
                 <span className="py-10">Sumário</span>
                 <motion.div

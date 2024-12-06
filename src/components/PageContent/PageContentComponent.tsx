@@ -90,6 +90,7 @@ export function PageContentComponent({ func }: PageContentProps) {
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-10">
             <div
+            style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}
                 className=" flex justify-center items-center border-2 border-dashed sm:w-1/2 sm:h-[30vh] sm:mx-6 h-[15vh] mx-6 rounded-md hover:bg-gray-100 dark:bg-opacity-30 duration-300"
                 onDrop={dragDropFile}
                 onDragOver={dragOverFile}

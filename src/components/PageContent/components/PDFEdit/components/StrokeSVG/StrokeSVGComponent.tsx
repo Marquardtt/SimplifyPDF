@@ -15,7 +15,7 @@ export const StrokeSVGComponent = ({ colorSelected, colorSize }: StrokeSVGProps)
             <path
 
                 d="M0,20 Q25,0 50,20 T100,20 T150,20"
-                stroke-linecap="round"
+                strokeLinecap="round"
                 stroke={colorSelected}
                 strokeWidth={colorSize}
                 fill="transparent"

@@ -57,7 +57,6 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
             const loadingTask = pdfjsLib.getDocument(file);
             const loadedPDF = await loadingTask.promise;
             setPdf(loadedPDF);
-            console.log(canvasRef);
             const urls: string[] = [];
             for (let i = 1; i <= loadedPDF.numPages; i++) {
                 const page = await loadedPDF.getPage(i);
