@@ -1,9 +1,9 @@
 "use client"
 
-import { PDFEditComponent } from "@/components/PageContent/components/PDFEdit";
 import { FileP } from "@/models";
 import { useState } from "react";
 import { PageContentComponent } from "@/components/PageContent";
+import { MainPageEditContent } from "@/components/MainPageEdit";
 
 export default function EditPage() {
     const [file, setFile] = useState([] as FileP[]);
@@ -25,7 +25,7 @@ export default function EditPage() {
 
     return (
         <div className="flex  w-full h-full items-center justify-center">
-            <PageContentComponent func={<></>} ></PageContentComponent>
+            <MainPageEditContent />
         </div>
     );
 }

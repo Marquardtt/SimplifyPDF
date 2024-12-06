@@ -4,8 +4,7 @@ import { useRouter } from "next/navigation"
 
 export default function Homepage() {
     const router = useRouter();
-
-
+    
     return (
         <>
             <div className="w-[70%] h-fit ">
