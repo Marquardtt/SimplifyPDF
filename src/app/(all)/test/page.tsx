@@ -3,8 +3,7 @@ import PdfEditor from '@/components/Test/PdfEditor';
 
 const Home = () => {
   return (
-    <div>
-      <h1>PDF Editor</h1>
+    <div className='w-screen h-screen'>
       <PdfEditor />
     </div>
   );

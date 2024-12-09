@@ -19,6 +19,7 @@ import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import { IndexComponent } from "./components/IndexComponent/IndexComponent";
+import { drawTextField } from "pdf-lib";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -74,7 +75,7 @@ export const PDFEditComponent = ({ file, pageNumber: initialPageNumber, closeMod
 
                 const renderContext = {
                     canvasContext: context,
-                    viewport,
+                    viewport
                 };
 
                 await page.render(renderContext).promise;

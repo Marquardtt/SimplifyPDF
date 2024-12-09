@@ -27,9 +27,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <body>
                 <FilesContext.Provider value={{ files, setFiles }}>
                     <DndProvider backend={HTML5Backend}>
-                        <header id="header">
+                        {/* <header id="header">
                             <HeaderComponent />
-                        </header>
+                        </header> */}
                         <main id="main">
                             <PageContent>
                                 {children}
