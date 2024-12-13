@@ -7,7 +7,7 @@ interface EditableTextProps {
     y: number;
     fontSize: number;
     onChange: (id: string, newContent: string) => void;
-    containerRef: React.RefObject<HTMLDivElement>; // Ref para o contêiner do canvas
+    containerRef: React.RefObject<HTMLDivElement>; 
 }
 
 const EditableText: React.FC<EditableTextProps> = ({
@@ -22,18 +22,17 @@ const EditableText: React.FC<EditableTextProps> = ({
     const [isFocused, setIsFocused] = useState(false);
     const [textWidth, setTextWidth] = useState(0);
 
-    // Função para calcular a largura do texto
     const calculateTextWidth = () => {
         const containerOffset = containerRef.current?.getBoundingClientRect();
-        return containerOffset ? containerOffset.width - x : 0; // Calcula largura com base na posição X
+        return containerOffset ? containerOffset.width - x : 0; 
     };
 
     useEffect(() => {
         setTextWidth(calculateTextWidth());
-    }, [x]); // Recalcula a largura do texto se a posição mudar
+    }, [x]); 
 
     const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        onChange(id, event.target.value); // Atualiza o conteúdo do texto
+        onChange(id, event.target.value);
     };
 
     const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
@@ -46,8 +45,7 @@ const EditableText: React.FC<EditableTextProps> = ({
         e.target.style.border = 'none';
     };
 
-    // Ajusta as coordenadas para considerar o contêiner
-    const containerOffset = containerRef.current?.getBoundingClientRect();
+    // const containerOffset = containerRef.current?.getBoundingClientRect();
     const adjustedX = x;
     const adjustedY = y;
 
@@ -58,13 +56,13 @@ const EditableText: React.FC<EditableTextProps> = ({
                 position: 'absolute',
                 left: `${adjustedX}px`,
                 top: `${adjustedY}px`,
-                width: `${textWidth}px`, // Largura ajustada conforme o espaço disponível
+                width: `${textWidth}px`, 
                 fontSize: `${fontSize}px`,
                 background: 'none',
                 resize: 'none',
                 outline: 'none',
-                wordWrap: 'break-word', // Permite a quebra de linha dentro do textarea
-                whiteSpace: 'pre-wrap', // Mantém os espaços em branco e quebras de linha
+                wordWrap: 'break-word', 
+                whiteSpace: 'pre-wrap', 
             }}
             onChange={handleChange}
             onFocus={handleFocus}

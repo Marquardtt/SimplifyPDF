@@ -24,9 +24,6 @@ export function handleText(fontWeight:any, drawingCanvasRef:any, drawings:any, m
                     text: text,
                     fontSize: fontSize, 
                     fontWeight: fontWeight,
-                    // boxWidth: boxDimension.width,
-                    // boxHeight: boxDimension.height,
-                    // fontStyle: fontStyle, 
                 },
             ]);
         }

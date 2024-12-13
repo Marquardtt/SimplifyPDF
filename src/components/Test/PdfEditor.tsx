@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 import * as pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
 import { PDFDocument, rgb } from 'pdf-lib';
@@ -21,17 +21,17 @@ const PdfEditor = () => {
     const canvasContainerRef = useRef<HTMLDivElement>(null);
 
     const fetchPdf = async () => {
-        const res = await fetch('/testepdf.pdf');
+        const res = await fetch('/c4496ee3-70ca-4a12-9d07-75cc1ab2f193 (1).pdf');
         const pdfData = new Uint8Array(await res.arrayBuffer());
         setPdfBytes(pdfData);
-        await renderPdf(pdfData); // Renderiza no canvas
-        await extractTextFromPdf(pdfData); // Extração do texto para edição
+        await renderPdf(pdfData);
+        await extractTextFromPdf(pdfData); 
     };
 
     const extractTextFromPdf = async (pdfData: Uint8Array) => {
-        setTextLayers([]); // Limpa camadas de texto
+        setTextLayers([]);
         const pdfDoc = await pdfjsLib.getDocument(pdfData).promise;
-        const page = await pdfDoc.getPage(1); // Suporte para apenas uma página por enquanto
+        const page = await pdfDoc.getPage(1); 
         const textContent = await page.getTextContent();
         const viewport = page.getViewport({ scale: 1.0 });
 
@@ -49,41 +49,49 @@ const PdfEditor = () => {
         setTextLayers(layers);
     };
 
-    // Função para renderizar o PDF no canvas sem os textos
     const renderPdf = async (pdfData: Uint8Array) => {
         const pdfDoc = await pdfjsLib.getDocument(pdfData).promise;
-        const page = await pdfDoc.getPage(1); // Suporte para apenas a primeira página
+        const page = await pdfDoc.getPage(1); 
         const viewport = page.getViewport({ scale: 1 });
-
+    
         if (canvasContainerRef.current) {
-            canvasContainerRef.current.innerHTML = ''; // Limpa canvas antigo
+            canvasContainerRef.current.innerHTML = ''; 
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
-
+    
             if (context) {
+                const operatorList = await page.getOperatorList();
+                const filteredFnArray = operatorList.fnArray.filter(
+                    (fn) =>
+                        fn !== pdfjsLib.OPS.setFont && fn !== pdfjsLib.OPS.showText
+                );
+                const filteredArgsArray = operatorList.argsArray.filter(
+                    (_, index) =>
+                        operatorList.fnArray[index] !== pdfjsLib.OPS.setFont &&
+                        operatorList.fnArray[index] !== pdfjsLib.OPS.showText
+                );
+                const modifiedOperatorList = {
+                    fnArray: filteredFnArray,
+                    argsArray: filteredArgsArray,
+                };
+    
                 const renderContext = {
                     canvasContext: context,
                     viewport,
+                    operatorList: modifiedOperatorList, 
                 };
-
                 await page.render(renderContext).promise;
+    
                 canvasContainerRef.current.appendChild(canvas);
-
-                // Estiliza o container para alinhar corretamente
+    
                 canvasContainerRef.current.style.width = `${viewport.width}px`;
                 canvasContainerRef.current.style.height = `${viewport.height}px`;
                 canvasContainerRef.current.style.position = 'relative';
             }
         }
     };
-
-    // const handleTextChange = (id: string, newContent: string) => {
-    //     setTextLayers((prev) =>
-    //         prev.map((layer) => (layer.id === id ? { ...layer, content: newContent } : layer))
-    //     );
-    // };
 
     const savePdf = async () => {
         if (!pdfBytes) return;
@@ -95,17 +103,15 @@ const PdfEditor = () => {
         pages.forEach((page, pageIndex) => {
             const { width, height } = page.getSize();
             const newPage = newPdfDoc.addPage([width, height]);
-            
-            // Adicionar o texto removido com o Textarea
+
             textLayers.forEach((layer) => {
                 console.log(layer.fontSize);
-                
+
                 if (parseInt(layer.id.split('-')[1]) - 1 === pageIndex) {
                     newPage.drawText(layer.content, {
                         x: layer.x,
                         y: newPage.getHeight() - layer.y - layer.fontSize,
                         size: layer.fontSize,
-                        
                         color: rgb(0, 0, 0),
                     });
                 }
@@ -123,8 +129,8 @@ const PdfEditor = () => {
     };
 
     return (
-        <div className=" w-full" style={{ position: 'relative' }}>
-            <div className='absolute right-0 top-0 '>
+        <div className="w-full" style={{ position: 'relative' }}>
+            <div className="absolute right-0 top-0">
                 <button onClick={() => fetchPdf()}>Carregar PDF</button>
                 <button onClick={savePdf} style={{ marginBottom: '20px' }}>
                     Salvar PDF
