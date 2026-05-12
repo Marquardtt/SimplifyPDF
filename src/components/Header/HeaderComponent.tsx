@@ -84,6 +84,7 @@ export function HeaderComponent() {
                                 onClick={() => (router.push('/merge'), setHover(false))} className="gap-2 flex items-center text-sm cursor-pointer"><i className=" pi pi-th-large" style={{ fontSize: 15 }}></i><span className="">Agrupar PDFs</span></motion.div>
                             <motion.div onClick={() => (router.push('/enumerate'), setHover(false))} className="gap-2  flex items-center text-sm cursor-pointer"><i className="pi pi-sort-numeric-up" style={{ fontSize: 15 }}></i><span className="">Enumerar PDFs</span></motion.div>
                             <motion.div onClick={() => (router.push('/edit'), setHover(false))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-file-edit" style={{ fontSize: 15 }}></i><span className="">Editar PDFs</span></motion.div>
+                            <motion.div onClick={() => (router.push('/compress'), setHover(false))} className="gap-2 flex items-center text-sm cursor-pointer"><i className="pi pi-file" style={{ fontSize: 15 }}></i><span className="">Comprimir PDFs</span></motion.div>
                         </motion.div>
                     </motion.div>
                 </div>
