@@ -31,11 +31,8 @@ export default function Homepage() {
                     <div className="flex justify-center items-center w-full flex-col gap-4 ">
                         <h1 className="truncate text-xl font-bold dark:text-white ">Ferramentas disponíveis</h1>
                         <div className="flex gap-10">
-
-
                             <div onClick={() => (router.push('/merge'))} className="dark:bg-gray-500 dark:hover:bg-gray-600 hover:bg-gray-200 rounded-md duration-300 cursor-pointer flex flex-col gap-4 w-[8vw] ">
-                                <div className="flex flex-col justify-around w-full h-full gap-3 rounded-md px-2 py-2" style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}
-                                >
+                                <div className="flex flex-col justify-around w-full h-full gap-3 rounded-md px-2 py-2" style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}>
                                     <div className=" flex justify-center">
                                         <i className="pi pi-th-large dark:text-white" style={{ fontSize: 35 }}></i>
                                     </div>
@@ -43,8 +40,7 @@ export default function Homepage() {
                                 </div>
                             </div>
                             <div onClick={() => (router.push('/enumerate'))} className="dark:bg-gray-500 dark:hover:bg-gray-600 hover:bg-gray-200 rounded-md duration-300 cursor-pointer flex flex-col gap-4 w-[8vw]">
-                                <div className="flex flex-col justify-around w-full h-full gap-3 rounded-md px-2 py-2 " style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}
-                                >
+                                <div className="flex flex-col justify-around w-full h-full gap-3 rounded-md px-2 py-2 " style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}>
                                     <div className=" flex justify-center">
                                         <i className="pi pi-sort-numeric-up dark:text-white" style={{ fontSize: 35 }}></i>
                                     </div>
@@ -52,13 +48,22 @@ export default function Homepage() {
                                 </div>
                             </div>
                             <div onClick={() => (router.push('/edit'))} className=" dark:bg-gray-500 dark:hover:bg-gray-600 hover:bg-gray-200 rounded-md duration-300 cursor-pointer flex flex-col gap-4 w-[8vw]">
-                                <div className="flex flex-col justify-around w-full h-full gap-3 rounded-md px-2 py-2 " style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}
-                                >
+                                <div className="flex flex-col justify-around w-full h-full gap-3 rounded-md px-2 py-2 " style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}>
                                     <div className=" flex justify-center">
                                         <i className="pi pi-file-edit dark:text-white" style={{ fontSize: 35 }}></i>
                                     </div>
                                     <div>
                                         <p className="text-center dark:text-white">Editar PDFs</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div onClick={() => (router.push('/compress'))} className=" dark:bg-gray-500 dark:hover:bg-gray-600 hover:bg-gray-200 rounded-md duration-300 cursor-pointer flex flex-col gap-4 w-[8vw]">
+                                <div className="flex flex-col justify-around w-full h-full gap-3 rounded-md px-2 py-2 " style={{ boxShadow: "rgba(0, 0, 0, 0.15) 0px 1px 15px 5px" }}>
+                                    <div className=" flex justify-center">
+                                        <i className="pi pi-file dark:text-white" style={{ fontSize: 35 }}></i>
+                                    </div>
+                                    <div>
+                                        <p className="text-center dark:text-white">Comprimir PDFs</p>
                                     </div>
                                 </div>
                             </div>
